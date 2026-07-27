@@ -1,0 +1,56 @@
+# Environment and local configuration
+.env
+.env.*
+!.env.example
+!.env.*.example
+!*.env.example
+*.local
+
+# Credentials, keys, and certificates
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.cer
+*.csr
+*.secret
+credentials.json
+service-account*.json
+!credentials.example.json
+!service-account*.example.json
+id_rsa*
+id_ed25519*
+
+# Local runtime state
+/.local/
+/.state/
+/data/
+/state/
+/cache/
+/tmp/
+*.pid
+*.sock
+*.sqlite
+*.sqlite3
+
+# Generated validation output
+/validation-output/
+/test-results/
+/coverage/
+/reports/
+*.sarif
+.markdownlint-cache
+.lychee-cache
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
