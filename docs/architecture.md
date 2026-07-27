@@ -30,6 +30,10 @@ destructive tools.
 The Norse names identify stable architectural roles. Products are replaceable
 implementations of those roles.
 
+See [Tools, capabilities, and interaction boundaries](tooling.md) for the
+complete capability-to-product map and the remote, administrative, and internal
+tool request paths.
+
 | Role | Responsibility | Initial implementation |
 | --- | --- | --- |
 | **Odine (Ody)** | Sole user-facing assistant, conversation, reasoning, and orchestration | Hermes Agent, Hermes WebUI, Hermex, and a Signal transport |
