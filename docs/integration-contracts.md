@@ -390,56 +390,73 @@ status: "staged"
 Promotion changes only the active index generation. It does not edit or delete
 AFFiNE. Old index-generation retention follows an explicit operational policy.
 
-## 7. Hermes completion export and Muninn checkpoints
+## 7. Hermes transcript outbox and Muninn checkpoints
 
-Hermes documents persisted sessions, session APIs, and session export.
-Completion-event emission, a privacy-preserving export adapter, and Muninn
-checkpoints are Asgard glue.
+> **Gated foundation — not deployed production behavior.**
 
-**Classification:** Upstream-supported session/export substrate + Asgard custom
-adapter.
+Hermes documents persisted sessions and a session API. The pinned Hermes
+`v0.19.0` compatibility review found no suitable built-in redacted incremental
+export or reliable completion event for long-lived Signal and WebUI sessions,
+so Asgard supplies a narrow compatibility adapter. This is a version-specific
+finding, not a claim about current or future Hermes releases.
+
+**Classification:** Upstream-supported session/API substrate + gated Asgard
+compatibility adapter.
 
 | Property | Contract |
 | --- | --- |
-| Inputs | Ended Hermes sessions after a durable high-water mark, filtered by allowed source and owner |
-| Outputs | Normalized conversation records plus a batch manifest |
-| Authority | Muninn can read approved completed sessions through Heimdall; it cannot read Hermes files or database directly |
-| Persistence | Hermes session store, export manifest, Muninn checkpoint, processed-source hashes |
-| Failure behavior | A partial batch does not advance the checkpoint; retry is idempotent; active or ambiguous sessions are skipped |
-| Acceptance test | Run the same bounded export twice; no duplicate knowledge candidates appear and the checkpoint advances only after successful draft persistence |
+| Inputs | Explicitly allowed transcript windows whose source and owner are policy-allowlisted |
+| Outputs | Minimized, HMAC-pseudonymized immutable transcript objects plus ordered, hash-chained manifests |
+| Authority | Exporter reads only the documented Hermes API; Muninn never reads Hermes or the outbox directly; Heimdall mediates authenticated read, lease, checkpoint, and compare-and-swap operations |
+| Persistence | Content-addressed append-only objects, immutable manifests, bounded leases, and a contiguous compare-and-swap checkpoint |
+| Qualification | At least one user and final-assistant message, no pending tool call, a configured quiet period, and the identical source revision observed twice |
+| Failure behavior | Identity ambiguity, malformed content, redaction failure, or a credential-bearing URL defers the window without publication; checkpoint never skips or rewinds |
+| Acceptance test | Repeat a bounded synthetic export, prove idempotent publication and ordered leasing, then advance the checkpoint only after the corresponding AFFiNE draft persists |
 
-Completion record:
+Generic manifest:
 
-```json
-{
-  "schema": "asgard.conversation-completed.v1",
-  "session_id": "<opaque-session-id>",
-  "owner_id": "<derived-owner-id>",
-  "source": "signal",
-  "started_at": "<rfc3339-timestamp>",
-  "ended_at": "<rfc3339-timestamp>",
-  "message_count": 12,
-  "content_reference": "<private-export-reference>",
-  "content_hash": "<sha256>",
-  "classification": "private"
-}
+```yaml
+schema: asgard.transcript-manifest.v1
+sequence: 7
+previous_manifest_hash: "<sha256>"
+objects:
+  - object_hash: "<sha256>"
+    source_class: "<allowed-source-class>"
+    owner_reference: "<hmac-pseudonym>"
+    session_reference: "<hmac-pseudonym>"
+    source_revision: "<hmac-pseudonym>"
+manifest_hash: "<sha256>"
 ```
 
-Checkpoint:
+Generic checkpoint:
 
 ```yaml
 schema: asgard.muninn-checkpoint.v1
-worker_id: "<muninn-worker-id>"
-source: "hermes-sessions"
-high_water_mark: "<opaque-cursor>"
-last_batch_id: "<opaque-batch-id>"
+committed_sequence: 7
+committed_manifest_hash: "<sha256>"
+lease_reference: "<opaque-lease-reference>"
 last_success_at: "<rfc3339-timestamp>"
-processed_manifest_hash: "<sha256>"
 ```
 
-The exporter should use documented Hermes APIs or export commands for the pinned
-release. It should not grant Muninn direct SQLite access merely because the
-database format is documented.
+The handoff accepts only the exact next sequence and matching manifest hash
+under an active lease. It advances only after successful draft persistence;
+failure leaves the checkpoint unchanged for an idempotent retry.
+
+**WebUI limitation:** the reviewed `v0.19.0` path does not provide the trusted
+user identity required for unattended owner allowlisting. Unattended WebUI
+export therefore remains disabled; only an explicitly selected synthetic or
+manual canary is permitted.
+
+**Validation required:** prove twice-observed quiescence, redaction and
+credential-URL rejection, manifest-chain integrity, lease conflicts, and
+skip/rewind rejection. Prove the exporter has no Hermes state, workspace, or
+database mount, and that only Heimdall can reach the private handoff. Atomic
+publication also depends on same-filesystem hard-link semantics. Private HTTP
+remains a residual risk and requires a private encrypted network plus explicit
+host-firewall enforcement.
+
+See [Hermes-to-Muninn transcript outbox](transcript-outbox.md) for the complete
+state flow, canary sequence, disabled-by-default controls, and residual risks.
 
 Upstream basis:
 

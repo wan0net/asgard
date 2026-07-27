@@ -155,8 +155,10 @@ sequenceDiagram
 9. Ody answers from canonical content. If a current external check was
    requested, Ody distinguishes historical decisions from new evidence.
 10. The answer is delivered through the original reply route.
-11. Hermes records the completed conversation and emits a reviewable completion
-    event for Muninn.
+11. Hermes retains the conversation behind its session API. While the
+    transcript bridge remains gated, a manual exporter may publish only a
+    twice-observed, quiescent, minimized window to the append-only outbox
+    described in [Hermes-to-Muninn transcript outbox](transcript-outbox.md).
 12. Grafana Cloud receives identifiers, timings, counts, health, and redacted
     decisions. It receives no authority to allow or deny the flow.
 
@@ -229,8 +231,14 @@ complete.
 
 ## Muninn hourly conversation review
 
-An hourly schedule keeps the knowledge inbox current without putting curation
-in the interactive request path. The following is an example schedule:
+An hourly schedule may eventually keep the knowledge inbox current without
+putting curation in the interactive request path. The schedule remains disabled
+until the manual Signal and WebUI canaries in
+[Hermes-to-Muninn transcript outbox](transcript-outbox.md) pass. Under the
+pinned Hermes `v0.19.0` compatibility limitation, unattended WebUI export
+remains disabled even after a manually selected WebUI canary passes.
+
+The following is an example future schedule:
 
 ```cron
 0 * * * *
@@ -241,19 +249,30 @@ not an accidental container default.
 
 ```mermaid
 sequenceDiagram
-    participant S as Scheduler
+    actor R as Owner or operator
+    participant E as Manual exporter
+    participant S as Hermes session API
+    participant O as Append-only outbox
+    participant H as Authenticated Heimdall handoff
     participant N as Muninn worker
-    participant H as Heimdall
-    participant E as Hermes conversation export
     participant M as Mem0
     participant A as AFFiNE
     participant G as Grafana Cloud
 
-    S->>N: Start hourly review with run ID
-    N->>H: Read completed conversations after checkpoint
-    H->>E: Export permitted normalized conversations
-    E-->>H: Transcripts and stable source references
-    H-->>N: Filtered conversation batch
+    R->>E: Run first manual observation
+    E->>S: Read allowlisted session through documented API
+    S-->>E: Session and message resources
+    E->>E: Record quiet candidate revision only
+    R->>E: Run later manual observation
+    E->>S: Read the same allowlisted session again
+    S-->>E: Unchanged quiet revision
+    E->>E: Minimize, redact, and HMAC-reference content
+    E->>O: Append immutable object and next hash-chained manifest
+    R->>N: Start gated Muninn canary
+    N->>H: Acquire lease and request exact-next manifest
+    H->>O: Authenticate, verify chain, and read immutable window
+    O-->>H: Next manifest and minimized window
+    H-->>N: Authorized window with provenance
     N->>N: Extract decisions, corrections, preferences, and open questions
     N->>H: Search Mimir for each material candidate
     H->>M: Semantic candidate query
@@ -268,14 +287,27 @@ sequenceDiagram
     H->>A: Create draft as Muninn
     A-->>H: Draft ID and revision
     H-->>N: Persisted result
-    N->>N: Advance checkpoint only after persistence
+    N->>H: Commit exact-next checkpoint with active lease
+    H->>O: Compare-and-swap checkpoint after draft persistence
+    O-->>H: Committed sequence and manifest hash
+    H-->>N: Checkpoint committed
     N-->>G: Redacted counts, duration, checkpoint, and health
 ```
 
 ### Hourly rules
 
-- Read completed conversations after a durable checkpoint.
-- Use stable conversation and message references for provenance.
+- Keep exporter and Muninn schedules disabled until the documented manual
+  Signal and WebUI canaries pass.
+- Read only allowlisted sessions through the documented Hermes session API;
+  never mount or read Hermes state directly.
+- Treat a twice-observed, unchanged, quiescent window as eligible. Do not claim
+  that a long-lived session is complete.
+- Keep unattended WebUI export disabled while the pinned runtime lacks trusted
+  WebUI owner attribution.
+- Publish minimized content with HMAC references as an immutable object plus
+  the exact-next hash-chained manifest.
+- Let Muninn obtain the next window only through Heimdall's authenticated
+  handoff and a bounded lease.
 - Treat attachments and quoted external content as untrusted.
 - Extract only durable candidates: explicit decisions, corrections, enduring
   preferences, commitments, unresolved questions, and architecture changes.
@@ -284,13 +316,18 @@ sequenceDiagram
 - Write new material to a review inbox or draft area with its provenance.
 - Do not silently replace a canonical page.
 - Do not infer a deletion because a newer conversation omitted an old fact.
-- Advance the checkpoint only after drafts and run state have been persisted.
-- Make reruns idempotent by deriving candidate IDs from source references and
-  content hashes.
+- Commit only the exact-next checkpoint with compare-and-swap after the
+  corresponding AFFiNE draft and provenance persist successfully.
+- Leave the checkpoint unchanged on export, handoff, lease, validation, or
+  draft-persistence failure.
+- Make replay idempotent by deriving candidate IDs from immutable window and
+  manifest references.
 
 Low-risk automation may create or annotate drafts. Promotion into canonical
 knowledge should follow an explicit policy, and contradictions, sensitive
 material, deletions, and major decision changes should require review.
+The full qualification, privacy, ordering, and enablement gates are in
+[Hermes-to-Muninn transcript outbox](transcript-outbox.md).
 
 ## Muninn nightly consolidation
 
@@ -633,8 +670,9 @@ Before treating the system as ready, demonstrate these complete paths:
    prove that Huginn is denied canonical-page writes.
 5. Trigger a high-risk no-op test from the browser, approve it through Signal,
    and confirm one-use resume behavior.
-6. Run hourly Muninn extraction twice over the same batch; verify idempotent
-   drafts and checkpoint behavior.
+6. Replay the same published manifest through the gated Muninn path; verify one
+   idempotent review draft, exact-next checkpoint advancement only after draft
+   persistence, and no advancement on a failed or duplicate replay.
 7. Run the 01:00 consolidation manually; verify contradictions are surfaced and
    nothing canonical is silently deleted.
 8. Delete a disposable Mem0 environment, rebuild it from AFFiNE, and compare
