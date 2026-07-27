@@ -11,10 +11,11 @@ This page is a map of responsibilities and interactions, not a setup guide. The
 [integration contracts](integration-contracts.md) define the custom wiring, and
 the [security model](security.md) defines the required negative tests.
 
-> [!IMPORTANT]
-> Product selection is not evidence that a control is enforced. Every access
-> path, identity mapping, policy decision, backup, and telemetry filter remains
-> **validation required** in a real deployment.
+!!! important
+
+    Product selection is not evidence that a control is enforced. Every access
+    path, identity mapping, policy decision, backup, and telemetry filter remains
+    **validation required** in a real deployment.
 
 ## Capability-to-product map
 
