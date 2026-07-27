@@ -4,13 +4,13 @@
 
 > *“I remember everything—except why we thought naming the index after memory would prevent cache invalidation.”*
 
-Mimir is Asgard's architectural knowledge role, not a chatbot or single
-product. It closes two distinct gaps: AFFiNE keeps accepted durable knowledge
-human-readable as the canonical record, while Mem0 provides semantic retrieval
-from a disposable index without making search results authoritative. A
-controlled indexer derives Mem0 entries only from accepted AFFiNE revisions.
-This is a reference design: the required adapters and controls must be
-validated before a deployment relies on them.
+Mimir is Pantheon Blueprint's architectural knowledge role, not a chatbot or
+single product. It closes two distinct gaps: AFFiNE keeps accepted durable
+knowledge human-readable as the canonical record, while Mem0 provides semantic
+retrieval from a disposable index without making search results authoritative.
+A controlled indexer derives Mem0 entries only from accepted AFFiNE revisions.
+This is a reference design: the required adapters and controls must be validated
+before a deployment relies on them.
 
 ## At a glance
 
@@ -68,14 +68,13 @@ not let agents bypass Heimdall for general knowledge operations. It also does
 not silently replace, delete, or supersede canonical knowledge; those changes
 require the applicable review or retention policy.
 
-## Validation
+## Readiness
 
-Before enabling a dependent capability, a deployment must demonstrate that
-unauthorized classifications are omitted from search results, each result
-resolves to its indexed AFFiNE page and revision, and an empty Mem0 index can
-be rebuilt solely from canonical sources. AFFiNE writes remain blocked until
-downstream identity and attribution validation passes. These are validation
-requirements, not claims about an installed product.
+Use the central [readiness and assurance model](../assurance.md) for Mimir's
+gates, maturity claims, and evidence expectations. Durable knowledge,
+recoverability, and access controls are defined in the [Mimir knowledge
+model](../mimir-knowledge-model.md), [backup model](../backups.md), and
+[security model](../security.md).
 
 ## See also
 

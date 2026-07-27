@@ -5,9 +5,9 @@
 > *“I turn yesterday’s confident conversation into today’s carefully qualified draft.”*
 
 Muninn fills the non-interactive gap between completed conversations and
-durable knowledge curation. It is Asgard's isolated, scheduled Hermes Agent
-worker: it receives ordered, minimized windows through the Hermes-to-Muninn
-transcript outbox/checkpoint handoff, uses Heimdall with its own workload
+durable knowledge curation. It is Pantheon Blueprint's isolated, scheduled
+Hermes Agent worker: it receives ordered, minimized windows through the
+Hermes-to-Muninn transcript outbox/checkpoint handoff, uses Heimdall with its own workload
 identity, uses Mem0 to find related material, reads AFFiNE as canonical
 authority, and prepares only permitted provenance-bearing candidates or
 drafts. Reusing Hermes software does not make Muninn another user-facing
@@ -26,9 +26,10 @@ their validation requirements pass.
 
 ## What Muninn does
 
-**Asgard policy:** Muninn processes only durable, ordered conversation windows
-made available through the checkpointed handoff. It extracts durable material,
-such as explicit decisions, corrections, enduring preferences, commitments,
+**Pantheon Blueprint policy:** Muninn processes only durable, ordered
+conversation windows made available through the checkpointed handoff. It
+extracts durable material, such as explicit decisions, corrections, enduring
+preferences, commitments,
 open questions, and architecture changes. It searches the rebuildable Mem0
 index to find related material, then reads relevant canonical AFFiNE pages
 before classifying each candidate as new, supporting, duplicate, update,
@@ -63,14 +64,13 @@ canonical knowledge, nor infer a deletion from a conversation omitting an
 older fact. It does not bypass Heimdall, receive raw credentials, or treat
 Mem0 as canonical authority.
 
-## Validation
+## Readiness
 
-**Validation required:** Keep Muninn schedules and its transcript path disabled
-until the applicable manual canaries pass. Demonstrate isolated profile,
-checkpoint, and connector identity; Heimdall-only access; ordered lease and
-compare-and-swap checkpoint behavior; and idempotent replay. Missing evidence,
-invalid provenance, failed validation, unavailable handoff, or failed draft
-persistence must fail closed and leave the checkpoint unchanged.
+Use the shared [readiness and assurance model](../assurance.md) for maturity
+claims and release gates. Muninn's durable flow and boundary details remain in
+[Data flows](../data-flows.md),
+[Integration contracts](../integration-contracts.md),
+and the [Security model](../security.md).
 
 ## See also
 
@@ -78,4 +78,5 @@ persistence must fail closed and leave the checkpoint unchanged.
 - [Tools, capabilities, and interaction boundaries](../tooling.md)
 - [Data flows](../data-flows.md)
 - [Integration contracts](../integration-contracts.md)
+- [Readiness and assurance](../assurance.md)
 - [Hermes-to-Muninn transcript outbox](../transcript-outbox.md)

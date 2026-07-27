@@ -17,7 +17,7 @@
   </p>
   <div class="pantheon-actions">
     <a class="pantheon-button pantheon-button--primary" href="docs/architecture/">Explore the architecture</a>
-    <a class="pantheon-button pantheon-button--secondary" href="#asgard-roles">Meet the system</a>
+    <a class="pantheon-button pantheon-button--secondary" href="#roles">Meet the roles</a>
   </div>
 </section>
 <!-- markdownlint-enable MD033 MD041 -->
@@ -29,7 +29,7 @@
     workflow has been verified. Deployments should record their own evidence,
     exceptions, and validation results separately.
 
-## Asgard roles
+## Roles
 
 This is the primary map; see [Tools, capabilities, and interaction boundaries](docs/tooling.md) for full product boundaries and interactions.
 
@@ -39,7 +39,32 @@ This is the primary map; see [Tools, capabilities, and interaction boundaries](d
 | [![Mimir avatar](docs/assets/avatars/mimir.png)](docs/gods/mimir.md) | [Mimir](docs/gods/mimir.md) | Organizes canonical knowledge with PARA-like views, seven typed objects, and GBrain-style current views plus evidence timelines. | AFFiNE + controlled indexer + Mem0 |
 | [![Muninn avatar](docs/assets/avatars/muninn.png)](docs/gods/muninn.md) | [Muninn](docs/gods/muninn.md) | Reviews completed conversations and prepares traceable knowledge candidates. | isolated Hermes Agent worker + transcript outbox |
 | [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted fetch/browser workers |
-| [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + Asgard policy/adapters + 1Password + Grafana Alloy/Cloud |
+| [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + Pantheon Blueprint policy/adapters + 1Password + Grafana Alloy/Cloud |
+
+## How one request moves
+
+```mermaid
+sequenceDiagram
+    participant UI as "User interface"
+    participant Ody as "Odine / Hermes"
+    participant Gate as "Heimdall / Executor"
+    participant Secrets as "1Password"
+    participant Mem as "Mem0"
+    participant Knowledge as "Canonical AFFiNE"
+    participant Telemetry as "Grafana Cloud"
+
+    UI->>Ody: "User request"
+    Ody->>Gate: "Tool request"
+    Gate->>Gate: "Apply policy and scoped identity"
+    Note over Secrets,Gate: 1Password provisions approved runtime secrets before requests
+    Gate->>Mem: "Reference search"
+    Mem-->>Gate: "References"
+    Gate->>Knowledge: "Canonical read"
+    Knowledge-->>Gate: "Filtered result"
+    Gate-->>Ody: "Filtered result"
+    Ody-->>UI: "Answer"
+    Gate-->>Telemetry: "Record redacted telemetry"
+```
 
 ## Architecture at a glance
 
@@ -131,22 +156,14 @@ provenance-bearing candidates, and writes drafts or approved changes through
 Heimdall. Huginn gathers external evidence but does not promote it directly into
 canonical knowledge.
 
-## Documentation
+## Choose your path
 
-- [Architecture](docs/architecture.md)
-- [Tools, capabilities, and interaction boundaries](docs/tooling.md)
-- [Getting started](docs/getting-started.md)
-- [Data flows](docs/data-flows.md)
-- [Integration contracts](docs/integration-contracts.md) — custom wiring,
-  implementation boundaries, and capability gates
-- [Security model](docs/security.md)
-- [Operations](docs/operations.md)
-- [Backups and restore gates](docs/backups.md) — containerized,
-  append-oriented backup and restore-gate guide
-- [Agent-assisted installation](docs/agent-assisted-install.md)
-- [Publishing the documentation](docs/publishing.md)
-- [Contributing](CONTRIBUTING.md)
-- [Security policy](SECURITY.md)
+- **Understand:** [architecture](docs/architecture.md),
+  [data flows](docs/data-flows.md), and [roles](docs/tooling.md).
+- **Deploy:** [getting started](docs/getting-started.md),
+  [integration contracts](docs/integration-contracts.md),
+  [operations](docs/operations.md), and [backups](docs/backups.md).
+- **Assure:** [assurance](docs/assurance.md) and [security](docs/security.md).
 
 ## License
 
@@ -156,6 +173,6 @@ non-commercial purposes. Future standalone software may carry its own license.
 
 ## Project status
 
-Asgard is being developed as a reusable architecture and deployment guide.
+Pantheon Blueprint is being developed as a reusable architecture and deployment guide.
 Features should be labelled as **reference design**, **implemented**, or
 **verified**. Only deployment-specific evidence can justify the final label.

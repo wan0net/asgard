@@ -4,10 +4,10 @@
 
 > *“I guard every gateway, because apparently ‘please don’t’ was not a sufficient security model.”*
 
-Heimdall is Asgard's logical security boundary and tool choke point, not a
-single product. Executor is the target enforcement point for agent tool
+Heimdall is Pantheon Blueprint's logical security boundary and tool choke
+point, not a single product. Executor is the target enforcement point for agent tool
 discovery and invocation. It must be paired with the controls Executor does
-not supply alone: Asgard policy, workload authentication, approvals,
+not supply alone: Pantheon Blueprint policy, workload authentication, approvals,
 identity-selection, result filtering, and authoritative action-record
 adapters. 1Password provides only the minimum approved secrets to runtimes,
 without agent vault browsing; Grafana Alloy/Cloud provides redacted telemetry
@@ -20,16 +20,17 @@ validation.
 | Aspect | Description |
 | --- | --- |
 | Function | Mediate general agent and workflow tool discovery and invocation through Executor. |
-| Reference tool(s) | Executor for enforcement; 1Password for minimum secret provisioning; Grafana Alloy/Cloud for redacted telemetry; plus Asgard policy, approval, identity-selection, result-filtering, and authoritative action-record adapters. |
+| Reference tool(s) | Executor for enforcement; 1Password for minimum secret provisioning; Grafana Alloy/Cloud for redacted telemetry; plus Pantheon Blueprint policy, approval, identity-selection, result-filtering, and authoritative action-record adapters. |
 | Authority | Derives the caller, permits capabilities, selects scoped connector identities, filters results, and records action evidence; downstream services retain their own authorization. |
 | Trust zone | Tools and execution boundary. |
 
 ## What Heimdall does
 
-**Asgard policy:** Executor enforces Heimdall's mediated tool discovery and
-invocation path. Asgard policy and workload authentication authenticate the
-caller and limit its tool catalogue. They evaluate the requested semantic
-operation, normalized arguments, target, classification, and approval state.
+**Pantheon Blueprint policy:** Executor enforces Heimdall's mediated tool
+discovery and invocation path. Pantheon Blueprint policy and workload
+authentication authenticate the caller and limit its tool catalogue. They
+evaluate the requested semantic operation, normalized arguments, target,
+classification, and approval state.
 Identity-selection selects a fixed, caller-scoped connector identity
 server-side; model-generated input cannot choose credentials or another
 workload's connection.
@@ -61,16 +62,13 @@ agents browse 1Password, allow Grafana to approve or resume actions, or trust
 tool output without filtering. It does not treat a shared connector catalogue
 as safe merely because a model is asked to select the right connection.
 
-## Validation
+## Readiness
 
-**Validation required:** Before enabling dependent capabilities, demonstrate
-that unauthorized tools are absent from discovery and fail at invocation;
-arguments and targets cannot change connector selection; approvals bind one
-exact, expiring action; and action records survive the required failure cases.
-Test direct bypass paths from every agent, cross-workload access, malformed or
-unsafe targets, result-injection handling, approval replay, and failure-closed
-behavior. Validate Executor and any supporting adapters against pinned releases;
-these tests are required evidence, not claims already established here.
+Use [Readiness and assurance](../assurance.md) as the single gate matrix and
+evidence model for enabling Heimdall-dependent capabilities. The durable
+security requirements and interface contracts remain in the
+[security model](../security.md) and
+[integration contracts](../integration-contracts.md).
 
 ## See also
 

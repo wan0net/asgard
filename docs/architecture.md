@@ -1,13 +1,13 @@
 # Architecture
 
-Asgard is a reference architecture for a personal AI assistant that presents one
-consistent identity to its owner while keeping knowledge, automation, and tool
-execution behind explicit trust boundaries.
+Pantheon Blueprint is a reference architecture for a personal AI assistant that
+presents one consistent identity to its owner while keeping knowledge,
+automation, and tool execution behind explicit trust boundaries.
 
 This document describes the intended design. It is not a claim that every
-control is enforced by every upstream product release. Use the validation gates
-in this document before granting the system access to sensitive data or
-destructive tools.
+control is enforced by every upstream product release. Use the maturity
+definitions and gate matrix in [Readiness and assurance](assurance.md) before
+granting the system access to sensitive data or destructive tools.
 
 ## Design goals
 
@@ -71,12 +71,12 @@ own virtual machine.
 Example public names should use a domain you control, such as:
 
 ```text
-chat.ody.asgard.example.com
-admin.ody.asgard.example.com
-mimir.asgard.example.com
-mem0.mimir.asgard.example.com
-heimdall.asgard.example.com
-huginn.asgard.example.com
+chat.ody.pantheon.example.com
+admin.ody.pantheon.example.com
+mimir.pantheon.example.com
+mem0.mimir.pantheon.example.com
+heimdall.pantheon.example.com
+huginn.pantheon.example.com
 ```
 
 The exact names are configuration. Internal APIs should normally have private
@@ -249,7 +249,7 @@ Heimdall should select the corresponding MCP configuration or credential set
 from the authenticated caller identity. It must not trust an email address,
 agent name, or connector profile supplied only in model-generated arguments.
 
-Required validation before enabling writes:
+Architecture checks before enabling writes:
 
 - Executor can maintain separate connector sessions or MCP configurations per
   caller.
@@ -418,28 +418,22 @@ Grafana Cloud should match the sensitivity of the remaining metadata.
 
 Observability can show that a control failed. It is not the control itself.
 
-## Capability and validation matrix
+## Architecture readiness summary
 
-Track capabilities as tests, not assumptions. Suggested initial states are
-conservative.
+The architecture is ready to advance only when its trust boundaries work
+end-to-end: interfaces preserve user context, Heimdall remains the only general
+tool path, downstream actions retain caller identity, canonical knowledge can
+rebuild its semantic index, and untrusted workers cannot reach trusted
+networks or credentials. Recovery must also succeed from documented backups.
 
-| Capability | Required evidence before marking ready |
-| --- | --- |
-| WebUI and messaging reach the same Ody policy | Cross-interface test shows consistent identity, tools, and conversation isolation |
-| AFFiNE AI uses the Hermes proxy safely | Authenticated requests preserve user context and cannot bypass normal tool policy |
-| All general tool calls use Heimdall | Egress test proves direct downstream calls fail from every agent and workflow container |
-| Per-agent AFFiNE attribution | End-to-end writes from Ody, Muninn, and Huginn appear under their intended AFFiNE accounts |
-| Approval works across WebUI and Signal | Pending request can be viewed, approved once, denied, expired, and correlated on both interfaces |
-| Mem0 is rebuildable | Empty-index restoration recreates searchable entries solely from canonical sources |
-| Muninn is non-interactive and isolated | Scheduled run uses its own profile, checkpoint, and connector identity |
-| Browser tools are contained | Worker cannot reach private networks, host mounts, container engine, or unrelated credentials |
-| Secrets stay out of agent context | Inspection confirms secret values are absent from prompts, tool schemas, logs, and error payloads |
-| Audit is useful and safe | A complete action can be traced without exposing credentials or sensitive content |
-| Recovery is real | A restore exercise succeeds on clean infrastructure using documented backups |
+[Readiness and assurance](assurance.md) owns the maturity definitions, gate
+matrix, and evidence-record format. Use the domain-specific checks in
+[Security](security.md), [Integration contracts](integration-contracts.md),
+[Transcript outbox](transcript-outbox.md), and [Backups](backups.md) to produce
+that evidence rather than treating this architecture description as proof.
 
-Product versions, APIs, OAuth behavior, and MCP support change. Pin releases,
-link each capability to a repeatable acceptance test, and re-run affected tests
-before promotion.
+Product versions, APIs, OAuth behaviour, and MCP support change. Pin releases
+and re-run affected checks before promotion.
 
 ## Security principles
 

@@ -1,9 +1,9 @@
 # Operations
 
-This runbook describes how to operate an Asgard deployment after its first
-successful installation. It is intentionally conservative: recovery evidence
-matters more than a green dashboard, and an observed restart is not the same as
-self-healing.
+This runbook describes how to operate a Pantheon Blueprint deployment after
+its first successful installation. It is intentionally conservative: recovery
+evidence matters more than a green dashboard, and an observed restart is not
+the same as self-healing.
 
 Values such as `<PRIVATE_CONFIG_REPO>`, `<LOCAL_TIMEZONE>`,
 `<BACKUP_BUCKET>`, and `<VERSION>` are placeholders. Never commit live secrets,
@@ -13,8 +13,8 @@ the public repository.
 ## Operating principles
 
 1. Git records desired state; running containers are not the source of truth.
-2. The public Asgard repository supplies reference documentation and reusable,
-   secret-free templates.
+2. The public Pantheon Blueprint repository supplies reference documentation
+   and reusable, secret-free templates.
 3. A private overlay repository records the deployment's inventory, version
    pins, service configuration, and secret references.
 4. Komodo applies reviewed desired state; it should not become an undocumented
@@ -115,8 +115,8 @@ deployment.
 
 ## Boot and service ownership
 
-Komodo Core runs outside the three Asgard hosts. Each host runs Komodo
-Periphery, preferably as the system service described by Komodo's
+Komodo Core runs outside the three Pantheon Blueprint hosts. Each host runs
+Komodo Periphery, preferably as the system service described by Komodo's
 [server connection documentation](https://komo.do/docs/setup/connect-servers).
 
 ### Host boot order
@@ -472,9 +472,10 @@ failure and administrative domain.
 | 9 | Host edge/config | Traefik, Alloy, system units, firewall intent, Periphery configuration references |
 
 1Password remains its own secret system. Do not export vault contents into the
-ordinary Asgard backup merely to make restore simpler. Back up the references,
-required vault/account recovery procedure, and independent emergency access
-material according to 1Password's guidance and your organization policy.
+ordinary Pantheon Blueprint backup merely to make restore simpler. Back up the
+references, required vault/account recovery procedure, and independent
+emergency access material according to 1Password's guidance and your
+organization policy.
 
 ### Application-consistent backup order
 
@@ -545,7 +546,7 @@ semantics.
 
 ### No automated deletion
 
-The default Asgard retention rule is:
+The default Pantheon Blueprint retention rule is:
 
 > The system may create new backup objects, but it does not decide to delete old
 > backup objects.
@@ -637,7 +638,7 @@ Grafana Alloy runs on each host and exports redacted metrics, logs, and traces t
 Grafana Cloud. Start with Grafana's
 [Alloy installation](https://grafana.com/docs/alloy/latest/set-up/install/) and
 [Docker monitoring](https://grafana.com/docs/alloy/latest/monitor/monitor-docker-containers/)
-documentation, then apply Asgard's data-minimization policy.
+documentation, then apply Pantheon Blueprint's data-minimization policy.
 
 ### Required signals
 
@@ -662,7 +663,7 @@ documentation, then apply Asgard's data-minimization policy.
 - certificate expiry; and
 - dependency reachability.
 
-#### Asgard workflows
+#### Pantheon Blueprint workflows
 
 - Ody request success by interface;
 - Heimdall decisions, approval latency, denial rate, and downstream result
@@ -922,27 +923,14 @@ Keep writes disabled until canonical data, caller identity, policy, audit, and
 backup paths have been verified. A degraded read-only assistant is preferable
 to a fully automated system with uncertain state.
 
-## Evidence record
+## Operating evidence
 
-For every update, incident, restore drill, or self-healing test, record:
-
-```text
-event ID
-start and end time with timezone
-operator or approved automation identity
-desired-state commit
-component versions and image digests
-affected hosts and services
-backup ID
-approval ID where applicable
-tests run
-expected result
-actual result
-manual interventions
-alerts received
-rollback or restore result
-follow-up actions
-```
+Use the shared maturity labels, readiness gates, and evidence-record structure
+defined in [Readiness and assurance](assurance.md). For each update, incident,
+restore drill, or self-healing test, add the operating details this runbook
+requires: desired-state commit, component versions and image digests, affected
+hosts and services, backup and approval IDs, measured recovery time, manual
+interventions, alert results, and rollback or restore outcome.
 
 Store only redacted evidence in Git. Put sensitive evidence in a separately
 protected incident or audit store.
@@ -963,7 +951,8 @@ protected incident or audit store.
 - [Pangolin documentation](https://docs.pangolin.net/)
 - [Traefik documentation](https://doc.traefik.io/traefik/)
 
-For initial deployment and validation gates, see
-[Getting started](getting-started.md). For trust assumptions and negative tests,
-see [Security model](security.md). For request, approval, indexing, and review
-sequences, see [Data flows](data-flows.md).
+For the shared maturity model, readiness gates, and evidence semantics, see
+[Readiness and assurance](assurance.md). For the initial deployment path, see
+[Getting started](getting-started.md). For trust assumptions and negative
+tests, see [Security model](security.md). For request, approval, indexing, and
+review sequences, see [Data flows](data-flows.md).

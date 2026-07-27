@@ -33,8 +33,9 @@ The labels below are used throughout this chapter.
   export, a scoped read-only API token, a reliable completion event for
   long-lived Signal and WebUI sessions, a trusted WebUI user identity, or an
   incremental message cursor.
-- **Asgard policy:** an architectural requirement imposed by Asgard even when
-  an upstream component could be configured differently.
+- **Pantheon Blueprint policy:** an architectural requirement imposed by
+  Pantheon Blueprint even when an upstream component could be configured
+  differently.
 - **Validation required:** behavior that must be demonstrated with synthetic
   data and the exact pinned images and configuration before it is trusted.
 
@@ -71,11 +72,11 @@ canonical.
 
 ## Compatibility adapter deployment
 
-**Asgard policy:** do not build a derivative Hermes image for this foundation.
-The manual exporter and private handoff run from the exact pinned Hermes image
-digest used by the deployment, with small reviewed scripts mounted read-only.
-This keeps the version boundary visible and avoids silently combining
-unreviewed Hermes code with a custom image.
+**Pantheon Blueprint policy:** do not build a derivative Hermes image for this
+foundation. The manual exporter and private handoff run from the exact pinned
+Hermes image digest used by the deployment, with small reviewed scripts mounted
+read-only. This keeps the version boundary visible and avoids silently
+combining unreviewed Hermes code with a custom image.
 
 The two processes have different authority:
 
@@ -139,9 +140,9 @@ observation publishes it only if the revision is identical and the quiet-period
 condition still holds. Any intervening change resets the observation count.
 This is the **twice-observed quiescent window** rule.
 
-**Asgard policy:** ambiguity fails closed. Malformed messages, missing owner
-attribution, an unknown source, an incomplete assistant turn, or an uncertain
-tool state defer the window. They do not produce a partial export.
+**Pantheon Blueprint policy:** ambiguity fails closed. Malformed messages,
+missing owner attribution, an unknown source, an incomplete assistant turn, or
+an uncertain tool state defer the window. They do not produce a partial export.
 
 ### WebUI identity limitation
 
@@ -149,11 +150,11 @@ tool state defer the window. They do not produce a partial export.
 WebUI session data does not provide the trusted user identity needed for
 unattended owner allowlisting.
 
-**Asgard policy:** unattended WebUI export therefore remains disabled. A WebUI
-canary may export only one explicitly selected synthetic or manually identified
-test session. Passing that canary does not authorize unattended WebUI
-processing. Signal or another source must also prove its own sender-to-owner
-mapping; success on one interface is not evidence for another.
+**Pantheon Blueprint policy:** unattended WebUI export therefore remains
+disabled. A WebUI canary may export only one explicitly selected synthetic or
+manually identified test session. Passing that canary does not authorize
+unattended WebUI processing. Signal or another source must also prove its own
+sender-to-owner mapping; success on one interface is not evidence for another.
 
 ## Data minimization and pseudonymization
 
@@ -236,7 +237,7 @@ evidence as described in [Operations](operations.md).
 ## Heimdall-only handoff contract
 
 The private handoff exposes the following logical operations. These names
-describe Asgard behavior, not literal routes supplied by Hermes:
+describe Pantheon Blueprint behavior, not literal routes supplied by Hermes:
 
 | Operation | Purpose | Mutation authority |
 | --- | --- | --- |
@@ -319,6 +320,11 @@ See [Security](security.md) for the wider mandatory-path and egress model.
 The foundation ships with exporter schedules disabled and the
 Executor/Muninn connection disabled. Do not enable either merely because the
 containers start successfully.
+
+The shared maturity model and release gates are defined in
+[Readiness and assurance](assurance.md). This chapter owns the
+outbox-specific evidence below; satisfying it does not by itself promote the
+wider deployment.
 
 Complete and record public-safe evidence for these gates in order:
 

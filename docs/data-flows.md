@@ -1,8 +1,11 @@
 # Data flows
 
-This chapter describes how information and actions should move through Asgard.
-The flows are security requirements and implementation targets, not evidence
-that a particular upstream release already implements them.
+This chapter describes how information and actions should move through
+Pantheon Blueprint. It owns the concrete end-to-end flow scenarios; see
+[Readiness and assurance](assurance.md) for maturity labels, the central gate
+matrix, and evidence expectations. The flows are security requirements and
+implementation targets, not evidence that a particular upstream release
+already implements them.
 
 The examples use generic identities and addresses. Schedules are examples and
 must be configured for the deployment's local time zone.
@@ -81,7 +84,7 @@ origin:
 user_id: authenticated-owner-id
 channel: webui | hermex | signal | email | affine-ai
 channel_conversation_id: opaque-channel-value
-asgard_conversation_id: opaque-internal-value
+pantheon_conversation_id: opaque-internal-value
 message_id: opaque-channel-value
 received_at: timestamp
 attachments:
@@ -171,8 +174,9 @@ Ody, Muninn, and Huginn should have separate workload identities and separate
 accounts where the downstream system supports attribution. A shared Heimdall
 endpoint must preserve that distinction.
 
-This is a required Asgard capability. It is not a statement that every Executor
-version already guarantees safe multi-identity connector selection.
+This is a required Pantheon Blueprint capability. It is not a statement that
+every Executor version already guarantees safe multi-identity connector
+selection.
 
 ```mermaid
 flowchart LR
