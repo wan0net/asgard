@@ -41,6 +41,7 @@ nav:
       - Heimdall: docs/gods/heimdall.md
   - Design:
       - Architecture: docs/architecture.md
+      - Mimir knowledge model: docs/mimir-knowledge-model.md
       - Tools and boundaries: docs/tooling.md
       - Data flows: docs/data-flows.md
       - Transcript outbox: docs/transcript-outbox.md

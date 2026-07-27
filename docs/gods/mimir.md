@@ -27,6 +27,15 @@ revisions. Mem0 is therefore a disposable semantic retrieval index: it helps
 find relevant material and can be erased and rebuilt from canonical content,
 but it is not a second source of truth.
 
+Mimir organizes canonical knowledge with a hybrid [Mimir knowledge
+model](../mimir-knowledge-model.md): a Capacities-inspired conventional object
+model starts with exactly seven primary types: Project, Area,
+Person/Organisation, Topic, Decision, Source, and Procedure. PARA-like
+dashboards are navigation views rather than exclusive folders. Canonical entity
+pages pair GBrain-style rewritable current understanding and state with an
+append-only evidence timeline, while LLMWiki-style synthesis is used only for
+research ingestion.
+
 For an important claim, Ody first retrieves candidate references from Mem0 and
 then reads the corresponding canonical AFFiNE content. If AFFiNE and Mem0
 disagree, AFFiNE wins. This retrieval flow and the source metadata expected of
@@ -69,6 +78,7 @@ requirements, not claims about an installed product.
 ## See also
 
 - [Architecture](../architecture.md#mimir-authority-model)
+- [Mimir knowledge model](../mimir-knowledge-model.md)
 - [Tools, capabilities, and interaction boundaries](../tooling.md)
 - [Data flows](../data-flows.md#user-question-and-knowledge-retrieval)
 - [Integration contracts](../integration-contracts.md#4-mimir-search)

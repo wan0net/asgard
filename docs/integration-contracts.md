@@ -264,10 +264,19 @@ canonical AFFiNE pages.
 
 **Classification:** Upstream-supported substrate + Asgard custom adapter.
 
+The [Mimir knowledge model](mimir-knowledge-model.md) defines the page
+conventions behind this index. Canonical AFFiNE pages use exactly seven
+conventional primary object types: `Project`, `Area`, `Person/Organisation`,
+`Topic`, `Decision`, `Source`, and `Procedure`. Search results and index
+metadata preserve the stable AFFiNE page ID and revision, classification,
+`canonical_state`, `review_state`, permitted provenance and source references,
+and deterministic content hash where relevant and policy permits them as safe
+metadata.
+
 | Property | Contract |
 | --- | --- |
 | Inputs | Query, authenticated owner, workload, permitted classification set, result limit, and task purpose |
-| Outputs | Ranked AFFiNE references with indexed revision, status, score, and safe excerpt |
+| Outputs | Ranked AFFiNE references with indexed revision, canonical and review state where policy permits, score, and safe excerpt |
 | Authority | Heimdall filters namespaces and classifications; Mem0 relevance never grants access |
 | Persistence | Mem0 index generations plus source-revision metadata; the request is auditable |
 | Failure behavior | Stale, malformed, unauthorized, or orphaned references are omitted; unavailable Mem0 produces an explicit retrieval failure rather than fabricated memory |
@@ -285,14 +294,18 @@ Example result:
       "affine_page_id": "<stable-page-id>",
       "affine_revision": "<source-revision>",
       "chunk_id": "<deterministic-chunk-id>",
+      "content_hash": "<sha256>",
       "classification": "private",
-      "status": "canonical",
       "score": 0.82,
       "excerpt": "<bounded-safe-excerpt>"
     }
   ]
 }
 ```
+
+The result object is bounded transport metadata, not a second canonical record
+schema. Provenance and source references are returned only when authorized and
+safe for the caller.
 
 Ody must fetch material canonical content through the AFFiNE reader before
 making an important claim. Mem0 does not become a second source of truth.
@@ -314,6 +327,13 @@ Asgard does not prescribe or invent an AFFiNE API or MCP endpoint in this
 contract. The deployer must select an actively maintained connector, pin its
 version and source, document its supported operations, and validate it against
 the pinned AFFiNE release.
+
+Canonical reads and writes operate on AFFiNE pages following the conventions in
+the [Mimir knowledge model](mimir-knowledge-model.md). AFFiNE remains the
+canonical representation; this contract does not introduce a separate Mimir
+record envelope. The deployment-selected connector operations remain
+version-pinned and validated, and this contract does not prescribe their
+implementation.
 
 | Property | Contract |
 | --- | --- |
@@ -341,6 +361,12 @@ classification: "private"
 idempotency_key: "<opaque-idempotency-key>"
 ```
 
+`asgard.affine-change.v1` remains the change transport envelope. The referenced
+diff proposes an AFFiNE page that follows the Mimir page conventions, including
+the applicable conventional type, `canonical_state`, `review_state`,
+classification, and authorized provenance or source references. Sensitive
+content is not embedded in the transport envelope.
+
 The initial writer should support only review-inbox draft creation. Canonical
 page mutation, supersession, and deletion are separately gated capabilities.
 
@@ -361,11 +387,11 @@ generation contract.
 
 | Property | Contract |
 | --- | --- |
-| Inputs | Consistent set of canonical AFFiNE pages, revisions, classifications, status, and source metadata |
-| Outputs | New Mem0 generation containing deterministic chunks and a validation manifest |
+| Inputs | Consistent set of canonical AFFiNE pages with stable page IDs and revisions, one of the seven conventional object types, `canonical_state`, `review_state`, classification, and provenance or source references |
+| Outputs | New Mem0 generation containing deterministic chunks and content hashes, only classification-permitted page metadata, and a validation manifest |
 | Authority | Read-only AFFiNE indexer identity; write-only or generation-scoped Mem0 identity |
 | Persistence | Generation manifest, page/chunk hashes, validation outcome, active-generation pointer |
-| Failure behavior | Failed or partial generation remains inactive; current active index remains untouched |
+| Failure behavior | Malformed page conventions or metadata fail validation; a failed or partial generation remains inactive and the current active index remains untouched |
 | Acceptance test | Delete a disposable index, rebuild it twice, and obtain identical source/chunk manifests and representative search behavior |
 
 Manifest:
@@ -389,6 +415,9 @@ status: "staged"
 
 Promotion changes only the active index generation. It does not edit or delete
 AFFiNE. Old index-generation retention follows an explicit operational policy.
+The Mem0 projection is disposable and rebuildable. Canonical AFFiNE chunks are
+written with `infer=false` so Mem0 stores deterministic canonical text without
+independently extracting or rewriting facts.
 
 ## 7. Hermes transcript outbox and Muninn checkpoints
 

@@ -21,7 +21,7 @@ This is the primary map; see [Tools, capabilities, and interaction boundaries](d
 | Image | Name | Function | Tool |
 | --- | --- | --- | --- |
 | [![Odine (Ody) avatar](docs/assets/avatars/odine.png)](docs/gods/odine.md) | [Odine (Ody)](docs/gods/odine.md) | The single user-facing assistant for conversation, reasoning, and orchestration. | Hermes Agent + Hermes WebUI + Hermex |
-| [![Mimir avatar](docs/assets/avatars/mimir.png)](docs/gods/mimir.md) | [Mimir](docs/gods/mimir.md) | Canonical knowledge in AFFiNE, with a rebuildable Mem0 retrieval index. | AFFiNE + controlled indexer + Mem0 |
+| [![Mimir avatar](docs/assets/avatars/mimir.png)](docs/gods/mimir.md) | [Mimir](docs/gods/mimir.md) | Organizes canonical knowledge with PARA-like views, seven typed objects, and GBrain-style current views plus evidence timelines. | AFFiNE + controlled indexer + Mem0 |
 | [![Muninn avatar](docs/assets/avatars/muninn.png)](docs/gods/muninn.md) | [Muninn](docs/gods/muninn.md) | Reviews completed conversations and prepares traceable knowledge candidates. | isolated Hermes Agent worker + transcript outbox |
 | [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted fetch/browser workers |
 | [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + Asgard policy/adapters + 1Password + Grafana Alloy/Cloud |

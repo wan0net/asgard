@@ -286,6 +286,40 @@ flowchart LR
     Ody -->|"fetch canonical content"| Canon
 ```
 
+### Logical knowledge structure
+
+Mimir uses AFFiNE as both its implementation and canonical source of truth. Its
+information architecture uses a Capacities-inspired object model implemented
+through AFFiNE conventions. Start with exactly seven primary types:
+
+- **Project**
+- **Area**
+- **Person/Organisation**
+- **Topic**
+- **Decision**
+- **Source**
+- **Procedure**
+
+Meetings, conversations, email, and external captures begin as `Source`
+subtypes rather than becoming additional primary types.
+
+A PARA-like shell of AFFiNE dashboards or saved collections provides
+human-facing navigation. These views are not exclusive folders or ownership
+containers: one object can appear in several relevant views without being
+duplicated or moved.
+
+Canonical entity pages use the strongest part of the GBrain pattern: a concise,
+rewritable `Current understanding` or `Current state` records the currently
+accepted view with provenance, while an append-only evidence timeline preserves
+dated, source-backed observations and changes, including evidence later
+contradicted or superseded.
+
+LLMWiki-style behaviour is used only for research ingestion: collected Sources
+are synthesised into cited Topic pages, and existing Topic pages are reconciled
+when new evidence arrives. It does not define the organisation of the whole
+knowledge base. Detailed schemas remain in the [Mimir knowledge
+model](mimir-knowledge-model.md).
+
 Key invariants:
 
 - When AFFiNE and Mem0 disagree, AFFiNE wins.
@@ -297,6 +331,8 @@ Key invariants:
 - Huginn stores raw evidence or stages candidates; it does not silently promote
   external content into canonical pages.
 - Muninn proposes or applies only the classes of changes allowed by policy.
+- Object type and canonical status must not be inferred from navigation view
+  membership.
 - Deletion and supersession are explicit human or retention-policy decisions,
   never an inference made solely by a model.
 
