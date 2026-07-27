@@ -1,320 +1,280 @@
 # Mimir knowledge model
 
-This page defines the logical information model for Mimir. AFFiNE stores the canonical, human-readable record; a controlled indexer projects permitted,
-accepted revisions into disposable Mem0 semantic retrieval. This is a reference design, not a claim that an integration is operational.
-Each deployment must pin and validate its AFFiNE mapping, connector, normalizer, chunker, and Mem0 adapter before enabling writes or indexing.
+This page defines the reference knowledge model for Mimir. AFFiNE is the
+canonical, human-readable source of truth. A controlled indexer projects
+permitted content into disposable, rebuildable Mem0 semantic retrieval.
 
-## Why a hybrid model
+This reference design is not a claim that an integration is operational.
+Deployments must pin and validate their AFFiNE and Mem0 integrations before use;
+unsupported behavior must not be advertised.
 
-Knowledge needs three independent answers:
+## Hybrid design
 
-1. **Where is this useful?** PARA supplies work context and navigation.
-2. **What kind of knowledge is it?** Typed records supply meaning and required fields.
-3. **How trusted and current is it?** The governance lifecycle supplies review state.
+Mimir combines four specific patterns:
 
-Combining these axes avoids treating a folder as record meaning or an archived project as deleted knowledge. A decision can relate to a Project and an Area,
-remain canonical after the Project becomes inactive, and later be superseded.
+- a **Capacities-inspired conventional object model inside AFFiNE**, implemented
+  with templates, tags, properties, links, and saved collections;
+- a **PARA-like human navigation shell** for approachable work-oriented entry
+  points;
+- a **GBrain-style entity page**, with rewritable current understanding and
+  current state above an append-only, source-backed evidence timeline; and
+- **LLMWiki-style research ingestion only**, where collected Sources are
+  synthesized into cited Topic pages.
 
-## Design principles
+These patterns have limited roles. PARA-like views are not exclusive folders,
+and LLMWiki-style folder organization does not structure the knowledge base.
+AFFiNE remains the implementation and authority.
 
-- AFFiNE is the canonical, human-editable source of truth.
-- Stable record and page identifiers, not titles or locations, carry identity.
-- PARA context, record type, and lifecycle status are independent axes.
-- Records may relate to several contexts and have at most one primary context.
-- Provenance is retained through promotion, consolidation, and supersession.
-- Material conflicts are represented; they are not silently overwritten.
-- Destructive changes require explicit authority, review, and an audit trail.
-- Classification applies to canonical content and every derived representation.
-- Mem0 contains deterministic, permitted projections, never independent facts.
+## Human-facing navigation
 
-## Axis 1: PARA work context
+The human-facing front door is a small set of AFFiNE dashboards or saved collections:
 
-PARA describes why material is relevant to current work. It is context and navigation, not a semantic record type. Moving a record between PARA views does not change its type.
-
-| Context | Meaning | Required distinguishing fields |
-| --- | --- | --- |
-| Project | Time-bounded outcome with a finish condition | `context_id`, `name`, `outcome`, `state`, `started_at`, optional `target_at` |
-| Area | Ongoing responsibility or standard to maintain | `context_id`, `name`, `responsibility`, `owner_refs`, `state` |
-| Resource | Topic or material retained for possible use | `context_id`, `name`, `topic`, `state` |
-| Archive | Inactive context retained for history and retrieval | `context_id`, `name`, `prior_kind`, `archived_at`, `archive_reason`, `state` |
-
-`state` distinguishes active from inactive context. Archive means inactive
-context, not deletion, tombstoning, lost provenance, or lost canonicality.
-Archived contexts and linked records remain governed independently.
-
-A record may link to zero or more PARA contexts through stable `context_refs`.
-One may be the `primary_context` for presentation and must match one entry in
-`context_refs`. Changing it is navigation, not a claim that an entity belongs in
-one folder.
-
-Context containers may themselves be typed `context` records when they need a description, owner, history, relations, or review. Their `para_kind` does not replace their record type.
-
-## Axis 2: typed knowledge records
-
-The record type selects validation rules. The common envelope applies to every type; `typed_fields` contains the minimum type-specific fields below.
-
-| Type | Purpose | Type-specific minimum fields |
-| --- | --- | --- |
-| `note` | Bounded observation or explanation not represented by a stronger type | `body`, `note_kind` |
-| `decision` | Chosen course of action and its rationale | `decision`, `rationale`, `decided_at`, `decision_status`, `decision_maker_refs` |
-| `person` | Knowledge about a person relevant to permitted work | `display_name`, `identity_scope` |
-| `organization` | Knowledge about a group or legal/operating entity | `name`, `organization_kind` |
-| `meeting` | A time-bounded interaction and its durable outcomes | `started_at`, `participant_refs`, `agenda_or_purpose`, `outcome_summary` |
-| `commitment` | A promised outcome with an accountable owner | `commitment`, `owner_refs`, `commitment_status`, optional `due_at` |
-| `preference` | A stated or inferred choice that may need reconfirmation | `subject_ref`, `preference`, `confidence`, `basis`, `last_confirmed_at` |
-| `procedure` | Repeatable steps and their operating conditions | `objective`, `steps`, `preconditions`, `verification` |
-| `source` | A citable origin or retained evidence reference | `source_kind`, `locator`, `captured_at`, `content_hash` |
-| `concept` | A defined term, model, or durable idea | `definition`, `scope` |
-| `context` | A PARA container that also needs record governance | `para_kind`, `context_id`, `description`, `state` |
-
-Deployments may add versioned types but must not reinterpret an existing type without a schema migration. Do not use `note` to avoid a more precise type.
-
-## Axis 3: governance lifecycle
-
-Lifecycle says whether material was reviewed and remains the active canonical statement. It is separate from PARA Archive.
-
-| Status | Meaning | Indexing rule |
-| --- | --- | --- |
-| `candidate` | Newly extracted or proposed material with provenance, not yet ready for acceptance | Do not place in the active Mem0 generation |
-| `review` | Validated candidate awaiting the required human or policy decision | Do not place in the active Mem0 generation |
-| `canonical` | Accepted durable record in AFFiNE | Index only when classification permits |
-| `superseded` | Retained canonical history replaced by an explicitly linked canonical record | Exclude by default; allow historical search |
-| `tombstoned` | Content intentionally withdrawn under authorized deletion or retention policy | Remove content from active search; retain only permitted tombstone metadata |
-
-### Review and promotion rules
-
-1. A candidate needs a stable ID, provenance, classification, content hash, and type-valid minimum fields before `review`.
-2. Deduplication and conflict checks compare current AFFiNE revisions, not only Mem0 excerpts.
-3. `candidate` to `review` may be automated when validation succeeds.
-4. `review` to `canonical` requires an attributable reviewer or a narrowly defined, tested promotion policy for that change class.
-5. Contradictions, sensitive material, deletion, major decision changes, and supersession require explicit review.
-6. Promotion records reviewer or policy ID, decision time, source revision, and idempotency key.
-7. Canonical mutation uses an expected revision, fails when stale, and never silently overwrites concurrent edits.
-8. Supersession and tombstoning are governed separately; neither follows from omission, age, low retrieval score, or PARA Archive.
-
-## Canonical record envelope
-
-This logical schema does not prescribe AFFiNE API operations or physical columns.
-
-```yaml
-schema: asgard.mimir-record.v1
-record_id: "rec_01JEXAMPLEDECISION"
-schema_version: 1
-type: decision
-title: "Use deterministic Mimir index generations"
-summary: "Rebuild Mem0 from accepted AFFiNE revisions."
-primary_context:
-  kind: project
-  record_id: "ctx_project_mimir"
-context_refs:
-  - kind: project
-    record_id: "ctx_project_mimir"
-  - kind: area
-    record_id: "ctx_area_knowledge-operations"
-lifecycle:
-  status: canonical
-  promoted_at: "2026-07-27T10:30:00Z"
-  promoted_by: "principal:owner"
-  policy_ref: "policy:knowledge-review-v1"
-classification: private
-provenance:
-  - source_ref: "src_conversation_01JEXAMPLE"
-    source_revision: "manifest:42"
-    asserted_by: "principal:owner"
-    observed_at: "2026-07-27T09:55:00Z"
-    extraction_ref: "muninn:candidate:sha256:example"
-typed_fields:
-  decision: "Use generation-based deterministic AFFiNE-to-Mem0 indexing."
-  rationale: "It permits validation and complete reconstruction."
-  decided_at: "2026-07-27T09:55:00Z"
-  decision_status: adopted
-  decision_maker_refs:
-    - "person:owner"
-relations:
-  - type: decided_in
-    target_ref: "meeting:index-design-review"
-  - type: supports
-    target_ref: "concept:affine-canonical-authority"
-  - type: related_to
-    target_ref: "procedure:mem0-rebuild"
-tags:
-  - mimir
-  - indexing
-temporal:
-  valid_from: "2026-07-27T09:55:00Z"
-  valid_to: null
-timestamps:
-  created_at: "2026-07-27T10:00:00Z"
-  updated_at: "2026-07-27T10:30:00Z"
-review:
-  next_review_at: "2027-01-27T00:00:00Z"
-  last_reviewed_at: "2026-07-27T10:30:00Z"
-  review_reason: "architecture decision"
-supersession:
-  supersedes_refs: []
-  superseded_by_ref: null
-content_hash: "sha256:<canonical-normalized-content>"
-idempotency_key: "mimir:manifest-42:decision-7"
+```text
+Mimir
+├── Home
+├── Inbox
+├── Projects
+├── Areas
+├── People & Organisations
+├── Knowledge
+├── Decisions & Procedures
+├── Sources
+├── Archive
+└── System
 ```
 
-`record_id` is stable across title, PARA, and presentation changes.
-`schema_version` identifies the envelope version. AFFiNE page ID and revision
-are storage mappings and must not be reconstructed from a title.
+These are navigation views, not exclusive folders or ownership containers. One
+page can appear in Projects, Recent decisions, a person's related work, and
+Recent changes without duplication or movement between folders.
 
-## Controlled relationships
+Home presents the most useful current views and search entry points. Inbox is
+the staging and triage surface for new knowledge, contradictions, and material
+awaiting review.
 
-Relationships are directed, typed edges between stable IDs:
+## Canonical object model
 
-| Relation | Meaning |
+AFFiNE does not become a native typed-object database by declaration. Types are
+conventions implemented with templates, tags, supported properties, linked
+pages, and saved collections. Backlinks and ordinary AFFiNE links are the
+portable relationship baseline; stronger behavior requires validation.
+
+Mimir starts with exactly seven conventional primary types:
+
+| Primary type | Purpose |
 | --- | --- |
-| `belongs_to` | Record is governed or contained by the target context/entity |
-| `about` | Record's primary subject is the target |
-| `supports` | Record supplies compatible reasoning or evidence |
-| `contradicts` | Record materially conflicts with the target |
-| `decided_in` | Decision was made in the target meeting or event |
-| `owner_of` | Person or organization is accountable for the target |
-| `fulfills` | Record or action satisfies the target commitment |
-| `derived_from` | Record was transformed or extracted from the target source |
-| `supersedes` | Canonical record explicitly replaces the target |
-| `related_to` | Relevant association with no stronger defined relation |
+| **Project** | A goal-oriented effort with an outcome, status, scope, participants, related decisions, and next actions |
+| **Area** | An ongoing responsibility or domain without a defined completion point |
+| **Person/Organisation** | Current relationship context, roles, interactions, related work, and open loops |
+| **Topic** | The current accepted understanding of a subject, supported by cited sources |
+| **Decision** | A decision, rationale, status, evidence, consequences, and supersession history |
+| **Source** | An attributable input such as a document, conversation, email, meeting, or external capture |
+| **Procedure** | Repeatable instructions with prerequisites, ordered steps, validation, and recovery guidance |
 
-Use the strongest accurate relation. `related_to` is a fallback. Targets use
-stable record, context, source, or principal IDs; titles and paths are labels.
+Meetings, conversations, email, and external captures are `Source` subtypes, not
+new primary types. A new primary type requires explicit human review and
+approval. Muninn may propose one after repeated observed use, but it cannot
+create one autonomously. This constraint prevents taxonomy sprawl.
 
-## Integrity and governance rules
+### Type templates
 
-### Conflicts and duplication
+Each primary type has a concise set of expected sections:
 
-- Exact replay is detected by idempotency key and source reference.
-- Content hashes detect normalized duplicates; semantic similarity finds near-duplicates but does not authorize merging.
-- Duplicate candidates converge on one review item while retaining every provenance edge.
-- Compatible claims may use `supports`; material disagreement uses `contradicts` and remains visible until reviewed.
-- Replacement requires reciprocal supersession metadata in one governed change.
+| Type | Expected type-specific sections |
+| --- | --- |
+| Project | Outcome and scope; current status; next actions; participants; related decisions; milestones |
+| Area | Purpose and standards; current health; responsibilities; active projects; recurring reviews |
+| Person/Organisation | Relationship and roles; current context; interactions; related projects/topics; open loops |
+| Topic | Current understanding; key claims; related concepts; open questions; cited evidence |
+| Decision | Decision and status; rationale; alternatives; consequences; evidence; supersedes/superseded by |
+| Source | Origin and author; captured/published dates; source location; summary; extracted claims; processing state |
+| Procedure | Purpose; prerequisites; ordered steps; validation; rollback/recovery; owner and review date |
 
-### Provenance, classification, and time
+### GBrain entity page pattern
 
-- Every candidate names a source reference, revision, observation time, and asserting principal when known.
-- Transformations append provenance; they do not replace the original chain.
-- Classification uses `general`, `private`, `sensitive`, or `restricted` as defined in [Security](security.md#data-classification).
-- Restricted material never enters AFFiNE, Mem0, prompts, chat, or telemetry; rejection audits must not reproduce it.
-- Derived summaries, chunks, embeddings, locators, and metadata inherit the highest applicable classification unless approved declassification proves otherwise.
-- Time-sensitive claims use `valid_from` and `valid_to`; `observed_at` does not assert that a claim remains true.
+Canonical entity pages follow this structure:
 
-### Preferences and reconfirmation
+```text
+# Entity title
 
-- A preference records whether its basis is `stated`, `observed`, or `inferred`.
-- Confidence is a bounded value or controlled label defined by the deployment.
-- Inferred preferences start below stated preferences and cannot override them without review.
-- Material preferences need `last_confirmed_at` and an impact-based review interval. Expiry triggers reconfirmation and policy-defined lower reliance, not deletion.
+## Current understanding
+The concise, rewritable, currently accepted view, with provenance.
 
-### Deletion, tombstones, and idempotency
+## Current state
+Status, ownership, risks, and pending work.
 
-- Deletion requires explicit owner or retention-policy authority and an attributable audit event.
-- Tombstones retain only permitted identity, reason, time, authority, and supersession references; policy removes sensitive content.
-- The indexer removes tombstoned content and forbidden metadata from the next active Mem0 generation.
-- Reusing an idempotency key with different content conflicts; identical content returns the prior result.
-- Derive candidate IDs from immutable source and manifest references where available.
+## Relationships
+Linked projects, areas, people, organisations, topics, decisions, procedures,
+and sources.
 
-## AFFiNE canonical mapping
+## Open questions
+Unknowns, conflicts, and items requiring investigation or review.
 
-The logical record maps to a canonical AFFiNE page. Its body holds the full
-meaning; database properties, relations, and tags (or equivalents) hold
-queryable envelope fields. Reviewers must see provenance and governance.
+## Evidence timeline
+Append-only, dated, source-backed observations and changes.
+```
 
-Implement PARA as views, collections, or equivalent navigation over
-`context_refs` and context state. Folder or view is not authority and does not
-determine type or lifecycle.
+The top sections are concise and rewritable. Together they present the current
+accepted view and must identify its provenance. The Evidence timeline is not
+canonical truth by itself: it preserves dated, source-backed observations,
+including evidence later contradicted or superseded.
 
-Asgard does not invent an AFFiNE API, MCP endpoint, property primitive, or
-revision behavior. The mapping must pin the AFFiNE release and connector,
-document operations, and validate IDs, revisions, relations, attribution,
-optimistic concurrency, and idempotency before writes are enabled.
+Muninn reconciles new evidence into the current understanding and current state
+without erasing evidence history. For research ingestion, collected Sources are
+synthesized into cited Topic pages; new evidence updates or reconciles an
+existing Topic rather than creating an unrelated research-folder hierarchy.
 
-## Mem0 projection
+## Common properties
 
-The controlled indexer reads only permitted accepted AFFiNE revisions,
-normalizes them without changing meaning, and emits deterministic chunks. Each
-chunk carries safe metadata sufficient to resolve and validate its source:
+Every canonical object has this common logical property baseline:
 
-- logical `record_id` and record `type`;
-- AFFiNE workspace/page ID and exact source revision;
-- deterministic chunk ID and content hash;
-- permitted context references;
-- lifecycle status and classification;
-- indexing timestamp and index generation;
-- pinned normalizer and chunker versions where needed for reconstruction.
+```yaml
+type: Project | Area | Person/Organisation | Topic | Decision | Source | Procedure
+status:
+owner:
+sensitivity: general | private | sensitive
+canonical_state: candidate | canonical | superseded | archived
+review_state: unreviewed | reviewed | needs-review | contradictory
+created_at:
+updated_at:
+reviewed_at:
+review_due:
+related_projects: []
+related_areas: []
+related_people_organisations: []
+related_topics: []
+source_ids: []
+provenance: []
+supersedes: []
+superseded_by: []
+```
 
-Only `canonical` content enters normal active retrieval. Superseded content may
-enter a separately filtered historical mode; candidates, review drafts, and
-tombstoned content do not. The indexer must omit any data outside the index
-identity's permitted classifications. Mem0 namespaces and relevance scores are
-not authorization.
+Type-specific properties may extend this baseline. For example, a Decision can
+have a decision date and alternatives, while a Source can have an origin URL,
+capture timestamp, author, content hash, and subtype.
 
-Generation validation checks counts, hashes, classifications, source
-references, and representative queries before activation. Failure leaves the
-current generation untouched. Mem0 can be erased and rebuilt from AFFiNE; when
-the two disagree, AFFiNE wins.
+If the pinned AFFiNE version does not expose every field as a native property,
+the logical schema may use a consistent metadata block until a native mapping
+is proven. The mapping must not assume an unvalidated property primitive,
+relation behavior, or query capability.
 
-## Creation and review flow
+## Saved views
 
-1. Ody identifies durable owner-provided material, Muninn reviews eligible
-   conversation exports, or Huginn stages external evidence.
-2. Huginn retains untrusted captures and provenance only; it cannot write
-   canonical knowledge.
-3. Ody or Muninn submits a provenance-bearing candidate through Heimdall using
-   its authenticated workload identity and an idempotency key.
-4. Heimdall enforces caller, classification, connector, policy, expected
-   revision, and attribution before the selected AFFiNE connector creates or
-   updates a review draft.
-5. Muninn compares the candidate with Mem0 references, then reads the relevant
-   canonical AFFiNE revisions to classify duplicates, support, contradiction,
-   or proposed change.
-6. A reviewer or explicitly approved low-risk policy promotes a valid review
-   record. Major, contradictory, sensitive, destructive, and superseding
-   changes require explicit review.
-7. AFFiNE records the accepted canonical revision and audit identity.
-8. The controlled indexer projects that permitted revision into a staged Mem0
-   generation, validates it, and only then activates it.
+The initial saved AFFiNE collections or views are:
 
-## Worked decision example
+- Active projects
+- Areas needing attention
+- Recent decisions
+- People recently mentioned
+- Knowledge due for review
+- New/untriaged sources
+- Recent changes
+- Contradictions/Awaiting review
 
-`decision:index-generations` is a canonical `decision` whose primary context is
-`project:mimir-rebuild` and whose additional context is
-`area:knowledge-operations`. Its provenance points to
-`meeting:index-design-review` and the immutable conversation manifest from
-which Muninn prepared the candidate. Moving the Project to PARA Archive leaves
-the decision canonical and linked to the active Area.
+These are filtered views over the conventions, not containers that own pages.
+Each proposed filter must be tested against the selected AFFiNE version. Where
+a property is not queryable, use a maintained index page rather than claiming
+automatic collection membership.
 
-Later, `decision:incremental-index-contract-v2` may replace it. After explicit
-review, the new canonical record has
-`supersedes -> decision:index-generations`; the old record becomes
-`superseded` with `superseded_by_ref` pointing back. Both retain provenance.
-Normal search returns the new decision, while authorized historical retrieval
-can resolve the old one. Neither record is deleted or made noncanonical merely
-because the Project was archived.
+## Search and retrieval
 
-## Validation checklist
+Mimir provides three complementary search modes:
 
-- [ ] PARA kind, record type, and lifecycle can change independently.
-- [ ] Multi-context records preserve an optional, valid primary context.
-- [ ] Every type rejects records missing its minimum fields.
-- [ ] Candidate promotion preserves provenance, reviewer, policy, and revision.
-- [ ] Contradictions, supersession, and tombstones require explicit review.
-- [ ] Archive changes navigation only and never implies deletion.
-- [ ] Stable IDs resolve despite title, page, and view changes.
-- [ ] Classification filters canonical reads and every Mem0 projection.
-- [ ] Restricted material is rejected before AFFiNE or Mem0 persistence.
-- [ ] Replayed inputs are idempotent and mismatched replays fail.
-- [ ] Mem0 chunks resolve to the exact AFFiNE page and revision.
-- [ ] Two clean rebuilds produce matching deterministic manifests.
-- [ ] An empty Mem0 can be rebuilt solely from canonical permitted sources.
-- [ ] Connector attribution and optimistic concurrency pass for the pinned
-      AFFiNE deployment before writes are enabled.
+1. **AFFiNE native navigation:** title, tag, database-row, full-body, and
+   property search capabilities actually proven in the selected AFFiNE version.
+2. **Saved filtered collections:** repeatable operational questions such as
+   active projects, recent decisions, or knowledge due for review.
+3. **Ask Ody:** semantic answering through
+   `Ody -> Heimdall -> Mem0 -> canonical AFFiNE pages`.
+
+For Ask Ody, Mem0 returns candidate references, Heimdall applies authorization,
+and Ody resolves relevant results to canonical AFFiNE content before answering
+with citations. A similarity match never grants access. If a Mem0 result cannot
+be resolved to an authorized canonical page, or is not explicitly labeled as a
+transient candidate under an allowed policy, it cannot be presented as accepted
+knowledge.
+
+## Mem0 index record
+
+Each indexed object includes metadata equivalent to:
+
+```yaml
+memory_id: generated-uuid
+source_type: affine_page
+source_id: stable-affine-page-id
+source_url: https://mimir.asgard.example.com/...
+revision: source-revision-or-hash
+classification: private
+status: canonical
+valid_from:
+valid_until:
+indexed_at:
+content_hash: sha256
+chunk_number: 0
+index_generation: 2026-07-25T000000Z
+```
+
+Canonical AFFiNE chunks are written to Mem0 with `infer=false`. Mem0 stores the
+deterministic canonical text without independently extracting or rewriting facts. This uses the raw-memory option in [Mem0's add operation](https://docs.mem0.ai/core-concepts/memory-operations/add).
+
+Inference is allowed only for separately governed transient candidates, in a
+separate namespace with its own retention and access policy. It is not used for
+canonical chunks. Heimdall applies access controls before results reach Ody;
+Mem0 namespaces and similarity scores are not authorization systems.
+
+## Deterministic AFFiNE-to-Mem0 reindexing
+
+1. An AFFiNE page is created, changed, accepted, superseded, or deleted.
+2. A checkpointed periodic scanner identifies the page and revision. A native
+   change event may optimize this later, but is not assumed.
+3. The indexer requests page export through Heimdall.
+4. Heimdall authorizes `<MIMIR_INDEXER_IDENTITY>`, the workspace, page, and
+   operation.
+5. The indexer normalizes content while preserving headings, relationships,
+   source metadata, classification, and the canonical page ID.
+6. The indexer creates deterministic chunks and content hashes.
+7. The index catalogue records page ID, source revision or hash, chunk hashes,
+   Mem0 memory IDs, classification, active generation, and status.
+8. New chunks are written with `infer=false` into a new index generation
+   through Heimdall.
+9. Representative queries and count/hash reconciliation validate the new
+   generation; the read alias then switches atomically.
+10. Old-generation chunks are retired by their recorded memory IDs only after
+    the switch. A shared or global Mem0 reset is prohibited.
+11. Index status, revision, timestamp, generation, and any error are recorded.
+12. A failed reindex leaves AFFiNE authoritative and generates an alert. It
+    does not roll back an accepted canonical change.
+
+A deterministic source key can follow:
+
+```text
+affine:{workspace_id}:{page_id}:{revision}:{chunk_number}
+```
+
+Generation activation is blue-green: validation failure leaves the current
+read generation untouched. Mem0 can be erased and rebuilt from permitted
+canonical AFFiNE pages and retained source records. When AFFiNE and Mem0
+disagree, AFFiNE wins.
+
+## Bootstrap and controlled evolution
+
+Bootstrap Mimir with only:
+
+- Home and Inbox;
+- the seven primary object types and their concise templates;
+- the common property baseline;
+- a handful of the highest-value saved collections; and
+- native AFFiNE search plus the first Ask Ody retrieval path.
+
+Do not prebuild a deep folder tree, ontology, or large tag vocabulary. Observe
+real use first. Muninn may then propose new properties, relationships, saved
+views, Source subtypes, or, only when the existing model repeatedly fails, a
+new primary type. Changes that expand the primary taxonomy require explicit
+human review and approval.
 
 ## Related design
 
 - [Mimir role](gods/mimir.md)
 - [Mimir authority model](architecture.md#mimir-authority-model)
-- [Mimir search](integration-contracts.md#4-mimir-search)
+- [Mimir search contract](integration-contracts.md#4-mimir-search)
 - [Data flows](data-flows.md)
-- [Security](security.md)
+- [Security model](security.md)

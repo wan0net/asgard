@@ -28,11 +28,13 @@ find relevant material and can be erased and rebuilt from canonical content,
 but it is not a second source of truth.
 
 Mimir organizes canonical knowledge with a hybrid [Mimir knowledge
-model](../mimir-knowledge-model.md): PARA provides work context through
-Projects, Areas, Resources, and Archives, while typed records capture meaning
-such as decisions, people, meetings, commitments, preferences, procedures, and
-sources. Its governance lifecycle is separate from PARA, so Archive does not
-mean deletion.
+model](../mimir-knowledge-model.md): a Capacities-inspired conventional object
+model starts with exactly seven primary types: Project, Area,
+Person/Organisation, Topic, Decision, Source, and Procedure. PARA-like
+dashboards are navigation views rather than exclusive folders. Canonical entity
+pages pair GBrain-style rewritable current understanding and state with an
+append-only evidence timeline, while LLMWiki-style synthesis is used only for
+research ingestion.
 
 For an important claim, Ody first retrieves candidate references from Mem0 and
 then reads the corresponding canonical AFFiNE content. If AFFiNE and Mem0
