@@ -109,15 +109,27 @@ Backrest must never mount a raw application tree. Raw trees can contain
 database files that are inconsistent while live, and unrelated temporary data.
 Read-only access would still allow those values to be copied into the backup.
 
-The sole source mount on each host is a curated path shaped like:
+The stable staging parent on each host is shaped like:
 
 ```text
-/data/asgard-backup-staging/<host>
+/data/asgard-backup-staging/<HOST_ROLE>
 ```
 
-Nothing under a raw application root such as `/data/asgard/<host>` is mounted
-into Backrest. The staging producer, not Backrest, knows how to quiesce or
-export each application safely.
+Mount that parent read-only in Backrest at `/staging/<HOST_ROLE>` and configure
+the host plan to read `/staging/<HOST_ROLE>/current`. `current` must be a real
+directory, not a symlink.
+
+Do not bind-mount only the host's `current` directory into a long-running
+container. A container runtime can retain the directory resolved when the
+container was created, so an atomic host-side rename can leave the mount
+pointing at the old generation. Mounting the stable parent lets each backup
+path lookup resolve the newly promoted `current`. A symlink is also unsuitable:
+depending on restic path and filesystem behavior, the link itself can be
+archived instead of the intended tree.
+
+Nothing under a raw application root such as
+`/data/asgard/<HOST_ROLE>` is mounted into Backrest. The staging producer, not
+Backrest, knows how to quiesce or export each application safely.
 
 Every stage must contain:
 
@@ -133,50 +145,121 @@ Every stage must contain:
 **Asgard policy:** the backup plan fails closed when staging is absent,
 incomplete, stale, concurrently changing, missing its completion marker, or
 fails checksum and consistency validation. It must never fall back to a raw
-application path or the previous partially replaced stage. Build a new stage in
-an isolated directory, verify it, and promote it atomically.
+application path or a previous generation.
+
+### Disabled exporter and host orchestrator
+
+Each host has two disabled, one-shot building blocks:
+
+1. an application exporter that writes one candidate generation; and
+2. a generic, root-owned systemd orchestrator that controls quiescence and
+   invokes that exporter.
+
+They are templates, not evidence of installed units. Their deployment
+configuration contains placeholders only, for example:
+
+```ini
+ASGARD_HOST_ROLE=<HOST_ROLE>
+ASGARD_COMPOSE_PROJECT=<COMPOSE_PROJECT>
+ASGARD_COMPOSE_FILE=<ABSOLUTE_COMPOSE_FILE>
+ASGARD_STAGE_ROOT=<ABSOLUTE_STAGING_PARENT>
+ASGARD_WRITER_ALLOWLIST=<ORDERED_COMPOSE_SERVICE_ALLOWLIST>
+ASGARD_MAX_STAGE_AGE=<APPROVED_DURATION>
+```
+
+Store the resolved environment in a root-owned, mode-restricted file outside
+this public repository. It must contain service identifiers and paths, not
+secret values. The units and timers remain disabled until every activation gate
+passes.
+
+For every run, the orchestrator must:
+
+1. acquire a host-scoped lock and reject overlap;
+2. record which allowlisted writer services are actually running;
+3. stop only that recorded set, in the declared order, and verify quiescence;
+4. leave PostgreSQL online for logical dumps;
+5. create a fresh regular-file host marker containing exactly the single line
+   `host=<HOST_ROLE>` only after quiescence succeeds;
+6. invoke the one-shot exporter and require all validation to pass;
+7. remove the host marker in an unconditional cleanup path; and
+8. restart, in reverse order, only the writers recorded as originally running.
+
+The restart cleanup runs after exporter failure, validation failure, or
+interruption. A service that was stopped before the run must remain stopped.
+Cleanup failure is a failed run and requires operator attention; it must never
+turn an incomplete candidate into `current`.
+
+The exporter must reject a missing, stale, non-regular, incorrectly owned, or
+non-exact host marker before it reads application state.
+
+### Immutable generation publication
+
+The exporter builds a unique generation beneath
+`<STAGING_PARENT>/.incoming/<RECOVERY_POINT_ID>`. Before publication it must:
+
+- create every expected payload;
+- reject unexpected file types and paths;
+- write a deterministic `MANIFEST` with versions, sizes, and secret references;
+- write a deterministic `CHECKSUMS` file covering every recovery payload;
+- validate PostgreSQL archives with `pg_restore --list`;
+- re-read and verify all listed checksums; and
+- write a regular-file `COMPLETE` marker last.
+
+After those checks, validate the existing `current` generation if one exists,
+rename it to immutable `history/<OLD_RECOVERY_POINT_ID>`, and rename the
+verified incoming directory to `current`. If the second rename fails, restore
+the old directory to `current` and fail the run. Never publish by copying over
+an existing `current`, and never allow routine exporter, backup, or verification
+automation to delete history. Retention or deletion requires a separate,
+human-approved procedure.
 
 ## Application-consistent staging
 
-### Hermes
+The matrix is an allowlist. Anything not listed is excluded until a reviewed
+restore requirement and test add it.
 
-Define a quiescence or checkpoint procedure for mutable Hermes conversation,
-session, profile, approved-skill, schedule, and worker state. Wait for active
-writes to finish, export the selected state, calculate its manifest, and resume
-writers only after the stage is complete. Exclude bootstrap material, runtime
-tokens, scratch data, and secret-bearing rendered configuration.
+| Host | Included recovery payload | Explicit exclusions |
+| --- | --- | --- |
+| Agent | Selected regular-file Hermes and Muninn profile, conversation, session, checkpoint, schedule, and approved-skill state. | Bootstrap material, runtime tokens, caches, logs, scratch data, rendered secret configuration, and symlinks, hard links, devices, sockets, or other special files. |
+| Knowledge | PostgreSQL 16 custom-format AFFiNE archive plus a deterministic archive of the matching blob/upload view; approved non-secret version and configuration metadata. | Live PostgreSQL files, live configuration, private keys, rendered secrets, temporary data, and Mem0 index data. |
+| Tools | PostgreSQL 16 custom-format n8n archive; quiesced Executor SQLite `data.db` together with its `-wal` and `-shm` companions when present; non-secret version metadata; references to the matching n8n and Executor keys. | Live PostgreSQL files, raw application trees, secret values, connector credentials, logs, caches, n8n local configuration, and local n8n execution binary data. |
 
-### AFFiNE
+**Upstream fact:** PostgreSQL 16 documents that `pg_dump` creates a consistent
+logical backup while the database remains in use, and that custom-format
+archives are consumed by `pg_restore`. See
+[PostgreSQL 16 `pg_dump`](https://www.postgresql.org/docs/16/app-pgdump.html).
+Use a client compatible with the deployed server, custom archive format, and
+the approved ownership and ACL policy. Validate stderr, exit status, and the
+archive table of contents. PostgreSQL stays online; only application writers
+are quiesced.
 
-Stage the AFFiNE database and its matching blob or upload data as one recovery
-point. Use the pinned release's documented online backup mechanism or quiesce
-writes while producing a database export and matching blob view. Record both in
-one manifest. A live database-directory copy paired with independently changing
-blobs is not application-consistent.
+**Asgard policy:** the AFFiNE database archive and blob archive are one
+recovery point and must share one identifier and manifest. Quiescing AFFiNE
+writers while creating both payloads is the consistency boundary. This pairing
+is an Asgard restore policy, not an upstream AFFiNE guarantee.
 
-### n8n
+**Upstream fact:** n8n uses its encryption key for stored credentials; see
+[n8n custom encryption-key configuration](https://docs.n8n.io/hosting/configuration/configuration-examples/encryption-key/).
+The manifest records the approved secret-system reference and version for the
+matching key, never the value.
 
-Stage the n8n database together with the persistent workflow state and retained
-binary data needed by the deployment. Include a reference to the matching n8n
-encryption key in the manifest, but never copy the key into staging. A database
-without its matching state and key reference is not a demonstrated recovery
-point.
+**Asgard policy:** local n8n binary execution data is non-authoritative and is
+omitted. n8n documents external storage as a separate store for binary data
+produced by workflow executions; see
+[n8n external binary storage](https://docs.n8n.io/hosting/scaling/external-storage/).
+If an approved deployment later requires that data for recovery, incorporate
+the external store explicitly and prove its consistency and restore behavior
+before changing this allowlist.
 
-### Executor
+**Asgard policy:** Executor's SQLite database and any present WAL and shared
+memory files are one quiesced set. The manifest records only the approved
+secret-system reference and version for the matching application key. Never
+copy either key value into staging.
 
-Stage the required Executor data, policy, connector metadata, and audit state
-without exporting raw connector secrets. Include a reference to the exact
-matching application key or recovery material held in the secret system. The
-restore test must prove that the staged data and separately recovered key belong
-to the same recovery point.
-
-### Mem0
-
-**Optional:** Mem0 is a rebuildable index, not canonical knowledge. A deployment
-may stage its configuration and schema while omitting index data, provided an
-empty Mem0 instance has been successfully rebuilt from the corresponding
-AFFiNE recovery point. If Mem0 data is backed up for convenience, stage it
-consistently and retain the rebuild test as the authoritative recovery path.
+**Optional:** Mem0 is a rebuildable index, not canonical knowledge. Omit Mem0
+data, private keys, and secret-bearing configuration. A deployment must prove
+that an empty Mem0 instance can be rebuilt from the corresponding restored
+AFFiNE recovery point before relying on that policy.
 
 ## Narrow recovery egress exception
 
@@ -265,17 +348,38 @@ Generate short-lived, single-use tokens with minimum permissions, pair each
 client once to the central instance, confirm the expected identity, and then
 discard the tokens. Never place pairing tokens in Git or deployment evidence.
 
-## Plans and verification
+## Schedule, pre-snapshot gate, and verification
 
 Follow the official
 [Backrest getting-started guide](https://garethgeorge.github.io/backrest/introduction/getting-started)
 for the pinned release's repository and plan concepts. Keep repository
 configuration deployment-specific and outside this public repository.
 
-A daily plan at **01:00 in the configured local timezone** is an example, not a
-universal requirement. Record the IANA timezone, daylight-saving behavior,
-overlap policy, and interaction with application maintenance. Stagger plans if
-the three hosts or staging jobs would otherwise contend for resources.
+The reference cadence is host staging at **00:15 local time** and the Backrest
+plan at **01:00 local time**. A deployment may select another IANA timezone or
+cadence, but must record the selection, daylight-saving behavior, maximum stage
+age, overlap policy, and maintenance interaction. Stagger hosts if staging,
+verification, or upload would otherwise contend for resources.
+
+Attach a Backrest command hook to `CONDITION_SNAPSHOT_START`. The hook must
+finish successfully before the snapshot and use `ON_ERROR_FATAL`, or
+`ON_ERROR_CANCEL` when intentionally suppressing downstream error hooks.
+Backrest documents both the event ordering and failure behaviors in
+[Hooks](https://garethgeorge.github.io/backrest/docs/hooks) and provides command
+patterns in its
+[hook examples](https://garethgeorge.github.io/backrest/cookbooks/command-hook-examples).
+
+The hook independently fails closed unless, for every configured host source:
+
+- `current` resolves to a real directory beneath the stable staging parent;
+- `COMPLETE`, `MANIFEST`, and `CHECKSUMS` are regular files and the manifest
+  names the same recovery point;
+- the manifest creation time is within the configured freshness window;
+- the exact expected payload set exists and no unapproved path is present; and
+- every recorded size and cryptographic checksum revalidates.
+
+The plan has no raw-path fallback, stale-generation fallback, or
+continue-on-hook-error setting.
 
 Successful upload is not successful verification. An independent verification
 job must:
@@ -290,30 +394,54 @@ job must:
 Do not treat the Backrest dashboard, an object count, or provider success
 response as independent verification.
 
-## Restore drills
+## Isolated restore sequence
 
 An isolated restore drill is mandatory before the `backup` profile can be
 enabled for scheduled use and after material changes to Backrest, restic,
 staging, application schemas, credentials, or the storage provider.
 
-The drill must:
+Use this order:
 
-1. start with clean volumes and an isolated network;
-2. select one immutable recovery point;
-3. use the separately controlled read or verifier path;
-4. verify remote data, manifests, versions, and checksums before restore;
-5. recover required key material through the approved 1Password recovery path;
-6. restore pinned application versions without production secrets;
-7. validate AFFiNE database-to-blob consistency;
-8. validate Hermes, n8n, and Executor state with safe synthetic transactions;
-9. rebuild Mem0 from restored AFFiNE data when it is treated as rebuildable;
-10. prevent production email, messaging, webhooks, tools, and DNS from being
-    reached; and
-11. record duration, manual steps, missing dependencies, and the final result.
+1. Open a change record naming the immutable recovery-point identifier,
+   expected application versions, operator, and success criteria.
+2. Create a clean restore host, clean volumes, and an isolated network with no
+   route or DNS resolution to production services.
+3. Disable outbound email, messaging, webhooks, workflow triggers, agent tools,
+   and other side effects at both the network and application layers.
+4. Obtain the verifier identity and repository passphrase through their
+   separately controlled recovery paths; do not copy them into evidence.
+5. Pin and verify the approved restic binary, then run repository integrity and
+   remote readback checks before restoring files.
+6. Restore only the selected recovery point into a new scratch directory.
+7. Require one regular `COMPLETE` marker, revalidate the manifest, paths,
+   versions, sizes, and checksums, and reject unexpected files or special file
+   types.
+8. Provision clean, pinned PostgreSQL 16-compatible servers and empty databases;
+   do not restore live database directories.
+9. Inspect each untrusted custom archive before execution, then restore the
+   AFFiNE and n8n archives with the approved ownership and ACL mapping.
+10. Restore AFFiNE's blob archive only with the database archive carrying the
+    same recovery-point identifier. Reject any mismatched pair.
+11. Recover the n8n key identified by the manifest through the secret system,
+    inject it only into the isolated runtime, and confirm stored credentials can
+    be decrypted without contacting their providers.
+12. Restore the quiesced Executor SQLite set together. Recover the separately
+    referenced Executor key and confirm database integrity before application
+    startup.
+13. Restore only the allowlisted Hermes and Muninn regular files, preserving no
+    unapproved ownership, links, or device metadata.
+14. Start pinned application versions with synthetic credentials and blocked
+    integrations. Validate schemas, representative reads, workflow loading,
+    Executor policy and audit state, and safe synthetic transactions.
+15. Rebuild Mem0 from the restored AFFiNE recovery point and validate retrieval
+    if Mem0 is treated as rebuildable.
+16. Record timings, commands or runbook steps, manual interventions, redacted
+    validation results, missing dependencies, and the final pass or fail.
+17. Keep the environment isolated for review. Destruction is a separate,
+    explicitly approved cleanup action.
 
-Destroying the isolated environment is a separate, explicitly approved cleanup
-action. A drill that can overwrite production or call production integrations
-has failed its isolation gate.
+A drill that can overwrite production, reuse production destinations, or call
+production integrations has failed its isolation gate.
 
 ## Activation gates and evidence
 
@@ -326,8 +454,20 @@ for all of these gates:
       image, host binary, raw application mount, or public route exists.
 - [ ] Backrest sees only read-only, atomically promoted staging and separate
       writable Backrest state.
+- [ ] The stable staging parent is mounted read-only, every plan reads a real
+      `/staging/<HOST_ROLE>/current` directory, and generation replacement is
+      visible without recreating the container.
+- [ ] The one-shot exporters, systemd orchestrators, timers, and Compose
+      `backup` profile remain disabled until approval.
+- [ ] Quiescence captures and stops only originally running allowlisted writers;
+      cleanup removes the exact host marker and restarts only that set in
+      reverse order after both success and failure.
+- [ ] PostgreSQL remains online for validated PostgreSQL 16 custom-format
+      logical dumps.
 - [ ] Missing, stale, partial, changing, and checksum-invalid staging all fail
-      closed.
+      closed at publication and in the Backrest pre-snapshot hook.
+- [ ] Incoming publication, immutable history, rollback on rename failure, and
+      the prohibition on automated staging-history deletion are demonstrated.
 - [ ] Hermes, AFFiNE, n8n, and Executor consistency procedures pass; the Mem0
       backup-or-rebuild decision is recorded and tested.
 - [ ] Private UI and sync routing, authentication, and least reachability pass.
@@ -340,8 +480,10 @@ for all of these gates:
       authority remain separated.
 - [ ] Backrest retention is None and no forget or prune schedule exists.
 - [ ] One-time multihost pairing and central operation reporting pass.
-- [ ] The example local schedule, if adopted, uses the intended timezone and
-      does not collide with staging or maintenance.
+- [ ] The 00:15 staging and 01:00 backup schedule, or an approved replacement,
+      uses the intended IANA timezone and does not collide with maintenance.
+- [ ] The snapshot-start hook uses a fatal or cancel failure policy and rejects
+      non-directory, incomplete, stale, unexpected, or checksum-invalid stages.
 - [ ] Exact-version, checksum, integrity, and readback verification pass.
 - [ ] An isolated restore drill passes with application-level checks.
 - [ ] A human records explicit approval before enabling the `backup` profile.
@@ -354,7 +496,8 @@ It does not prove that any deployment has:
 - created or configured an object-storage bucket;
 - provisioned credentials or repository encryption;
 - rendered or deployed a Compose stack;
-- created application exports or schedules;
+- installed exporters, orchestrators, markers, hooks, or schedules;
+- created application exports or immutable staging generations;
 - paired Backrest instances;
 - run a backup, verification job, or restore; or
 - enforced the described networks, mounts, permissions, or Object Lock rules.
