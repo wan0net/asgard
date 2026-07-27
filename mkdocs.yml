@@ -1,16 +1,35 @@
-site_name: Asgard
-site_description: Reference architecture for a self-hosted personal AI
-site_url: https://wan0net.github.io/asgard/
+site_name: Pantheon Blueprint
+site_description: An Open reference Architecture for Intelligent Agent Systems
+site_url: https://wan0.net/asgard/
 repo_url: https://github.com/wan0net/asgard
 repo_name: wan0net/asgard
 
 theme:
   name: material
+  font:
+    text: Geist
+    code: Geist Mono
+  palette:
+    - scheme: slate
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: black
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
   features:
+    - navigation.instant
+    - navigation.tracking
     - navigation.sections
     - navigation.top
     - search.highlight
     - search.suggest
+    - content.code.copy
 
 plugins:
   - search

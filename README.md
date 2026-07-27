@@ -1,12 +1,26 @@
-# Asgard
-
-Asgard is a reference architecture for a self-hosted personal AI that presents
-one assistant while separating knowledge, background work, automation, and tool
-execution into distinct security domains.
-
-The assistant is **Odine**, or **Ody** for short. Ody is the only conversational
-identity the user needs to know. The other names describe internal capabilities,
-not a collection of chatbots the user must coordinate.
+<!-- markdownlint-disable MD033 MD041 -->
+<section class="pantheon-hero">
+  <div class="pantheon-kicker">OPEN AGENT ARCHITECTURE</div>
+  <h1 class="pantheon-title">Pantheon Blueprint</h1>
+  <p class="pantheon-subtitle">An Open reference Architecture for Intelligent Agent Systems</p>
+  <p class="pantheon-intro">
+    The Norse gods understood that wisdom needed many hands. Odin pursued
+    knowledge, Mimir guarded memory, Huginn and Muninn ranged far and wide to
+    bring back thought and insight, and Heimdall defended the gateways to the
+    realm. Each had a role, and together they formed a system greater than any
+    one part. Pantheon Blueprint translates that pattern to modern AI agent
+    systems, describing an ecosystem where specialised agents and the services
+    that support them—memory, automation, identity, observability—all collaborate
+    through clear interfaces rather than one monolithic brain. No deities were
+    consulted or harmed in the making of this architecture, just a collection
+    of services and some lively design discussions.
+  </p>
+  <div class="pantheon-actions">
+    <a class="pantheon-button pantheon-button--primary" href="docs/architecture/">Explore the architecture</a>
+    <a class="pantheon-button pantheon-button--secondary" href="#asgard-roles">Meet the system</a>
+  </div>
+</section>
+<!-- markdownlint-enable MD033 MD041 -->
 
 > [!IMPORTANT]
 > This repository describes a reference design and its intended controls. A
