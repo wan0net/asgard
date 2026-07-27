@@ -25,11 +25,20 @@ markdown_extensions:
           class: mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
 
+extra_css:
+  - docs/stylesheets/extra.css
+
 nav:
   - Home: README.md
   - Start here:
       - Getting started: docs/getting-started.md
       - Agent-assisted installation: docs/agent-assisted-install.md
+  - Pantheon:
+      - Odine (Ody): docs/gods/odine.md
+      - Mimir: docs/gods/mimir.md
+      - Muninn: docs/gods/muninn.md
+      - Huginn: docs/gods/huginn.md
+      - Heimdall: docs/gods/heimdall.md
   - Design:
       - Architecture: docs/architecture.md
       - Tools and boundaries: docs/tooling.md

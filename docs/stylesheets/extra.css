@@ -1,0 +1,17 @@
+.md-typeset table img[alt$="avatar"] {
+  display: block;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.md-typeset img[alt$="portrait"] {
+  display: block;
+  width: 320px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 16px;
+}
