@@ -1,12 +1,13 @@
 # Hermes-to-Muninn transcript outbox
 
-> [!CAUTION]
-> **Status: GATED FOUNDATION — NOT DEPLOYED PRODUCTION BEHAVIOR**
->
-> This chapter defines a compatibility design and the evidence required before
-> enabling it. Export schedules, the Heimdall-to-Muninn connection, and
-> unattended processing remain disabled until every applicable gate below
-> passes against the pinned deployment.
+!!! caution
+
+    **Status: GATED FOUNDATION — NOT DEPLOYED PRODUCTION BEHAVIOR**
+
+    This chapter defines a compatibility design and the evidence required before
+    enabling it. Export schedules, the Heimdall-to-Muninn connection, and
+    unattended processing remain disabled until every applicable gate below
+    passes against the pinned deployment.
 
 The transcript outbox gives Muninn a minimized, replayable view of stable Ody
 conversations without granting Muninn access to Hermes state, its database, or
