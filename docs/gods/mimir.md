@@ -2,26 +2,30 @@
 
 ![Mimir portrait](../assets/avatars/mimir.png)
 
-Mimir is Asgard's knowledge capability. It keeps durable knowledge
-human-readable and makes it retrievable without treating a search result as
-authority. This is a reference design: the required adapters and controls must
-be validated before a deployment relies on them.
+Mimir is Asgard's architectural knowledge role, not a chatbot or single
+product. It closes two distinct gaps: AFFiNE keeps accepted durable knowledge
+human-readable as the canonical record, while Mem0 provides semantic retrieval
+from a disposable index without making search results authoritative. A
+controlled indexer derives Mem0 entries only from accepted AFFiNE revisions.
+This is a reference design: the required adapters and controls must be
+validated before a deployment relies on them.
 
 ## At a glance
 
 | Property | Description |
 | --- | --- |
-| Function | Canonical knowledge and retrieval |
-| Reference tool(s) | AFFiNE and Mem0 |
-| Authority | AFFiNE is the authoritative canonical record; Mem0 has no independent authority |
+| Function | One knowledge role: human-readable canonical knowledge plus semantic retrieval |
+| Reference tool(s) | AFFiNE fills the canonical-record gap; controlled indexing derives Mem0, which fills the semantic-retrieval gap |
+| Authority | AFFiNE is the authoritative canonical record; Mem0 is disposable, rebuildable, and has no independent authority |
 | Trust zone | Trusted knowledge |
 
 ## What Mimir does
 
 AFFiNE holds accepted, human-readable knowledge, including its canonical
-revisions. Mem0 is a disposable semantic index derived from accepted AFFiNE
-revisions by a controlled indexer. The index improves retrieval and can be
-erased and rebuilt from canonical content; it is not a second source of truth.
+revisions. The controlled indexer derives Mem0 entries only from those accepted
+revisions. Mem0 is therefore a disposable semantic retrieval index: it helps
+find relevant material and can be erased and rebuilt from canonical content,
+but it is not a second source of truth.
 
 For an important claim, Ody first retrieves candidate references from Mem0 and
 then reads the corresponding canonical AFFiNE content. If AFFiNE and Mem0
@@ -34,13 +38,16 @@ and [Mimir search contract](../integration-contracts.md#4-mimir-search).
 Ody requests Mimir operations through [Heimdall](heimdall.md), which applies
 the caller, classification, and tool policy before a permitted search or
 canonical read. Mem0 returns references and relevance, while AFFiNE supplies
-the canonical content used in material answers.
+the canonical content used in material answers; Heimdall mediates access to
+both rather than making either component an autonomous agent.
 
 [Muninn](muninn.md) reviews durable conversation material and proposes
-provenance-bearing drafts or changes through Heimdall. [Huginn](huginn.md)
-collects external evidence but cannot directly promote that material into
-canonical knowledge. A controlled indexer updates Mem0 only from accepted
-AFFiNE revisions.
+provenance-bearing candidates or drafts through Heimdall; acceptance remains
+subject to the applicable review policy before AFFiNE becomes canonical.
+[Huginn](huginn.md) only stages untrusted external evidence and cannot directly
+promote that material into canonical knowledge. Once a revision is accepted in
+AFFiNE, the controlled indexer may update Mem0 from it; neither Muninn nor
+Huginn writes directly to the retrieval index as an authority source.
 
 ## What Mimir does not do
 
