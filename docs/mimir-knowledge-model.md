@@ -4,6 +4,10 @@ This page defines the reference knowledge model for Mimir. AFFiNE is the
 canonical, human-readable source of truth. A controlled indexer projects
 permitted content into disposable, rebuildable Mem0 semantic retrieval.
 
+This page is the shared public conceptual and contract model. Deployment-specific
+identities, hostnames, credentials, connector versions, runtime status, and
+operational evidence belong only in the private Asgard operations repository.
+
 This reference design is not a claim that an integration is operational.
 Deployments must pin and validate their AFFiNE and Mem0 integrations before use;
 unsupported behavior must not be advertised.
