@@ -264,6 +264,12 @@ canonical AFFiNE pages.
 
 **Classification:** Upstream-supported substrate + Asgard custom adapter.
 
+The [Mimir knowledge model](mimir-knowledge-model.md) defines the logical
+records behind this index. Search results and index metadata preserve the
+stable record ID, record type, PARA context references, governance lifecycle,
+classification, AFFiNE page and revision, and content hash only where policy
+permits them as safe metadata.
+
 | Property | Contract |
 | --- | --- |
 | Inputs | Query, authenticated owner, workload, permitted classification set, result limit, and task purpose |
@@ -282,9 +288,16 @@ Example result:
   "index_generation": "<opaque-generation-id>",
   "results": [
     {
+      "record_id": "<stable-record-id>",
+      "record_type": "note",
+      "primary_context": {
+        "kind": "area",
+        "record_id": "<opaque-context-record-id>"
+      },
       "affine_page_id": "<stable-page-id>",
       "affine_revision": "<source-revision>",
       "chunk_id": "<deterministic-chunk-id>",
+      "content_hash": "<sha256>",
       "classification": "private",
       "status": "canonical",
       "score": 0.82,
@@ -293,6 +306,9 @@ Example result:
   ]
 }
 ```
+
+The result `status` field is the projected `lifecycle.status` from the logical
+record envelope.
 
 Ody must fetch material canonical content through the AFFiNE reader before
 making an important claim. Mem0 does not become a second source of truth.
@@ -315,6 +331,11 @@ contract. The deployer must select an actively maintained connector, pin its
 version and source, document its supported operations, and validate it against
 the pinned AFFiNE release.
 
+Canonical reads and writes carry the logical `asgard.mimir-record.v1` envelope
+defined by the [Mimir knowledge model](mimir-knowledge-model.md). The
+deployment-selected connector operations remain version-pinned and validated;
+this contract does not prescribe their implementation.
+
 | Property | Contract |
 | --- | --- |
 | Inputs | Stable workspace/page reference, expected revision, semantic read or proposed diff, provenance, classification, and idempotency key |
@@ -332,14 +353,26 @@ change_id: "<opaque-change-id>"
 workspace_id: "<stable-workspace-id>"
 page_id: "<stable-page-id>"
 expected_revision: "<source-revision>"
+record_id: "<stable-record-id>"
+record_type: "note"
+primary_context:
+  kind: "area"
+  record_id: "<opaque-context-record-id>"
+lifecycle:
+  status: "review"
 mode: "create-review-draft"
 provenance:
   source_type: "conversation"
   source_id: "<opaque-source-id>"
 diff_reference: "<private-diff-reference>"
+record_payload_reference: "<private-mimir-record-reference>"
 classification: "private"
 idempotency_key: "<opaque-idempotency-key>"
 ```
+
+`asgard.affine-change.v1` remains the change envelope. Its proposed content,
+held behind `record_payload_reference`, conforms to `asgard.mimir-record.v1`;
+the transport schema is not replaced and sensitive content is not embedded.
 
 The initial writer should support only review-inbox draft creation. Canonical
 page mutation, supersession, and deletion are separately gated capabilities.
@@ -361,11 +394,11 @@ generation contract.
 
 | Property | Contract |
 | --- | --- |
-| Inputs | Consistent set of canonical AFFiNE pages, revisions, classifications, status, and source metadata |
-| Outputs | New Mem0 generation containing deterministic chunks and a validation manifest |
+| Inputs | Consistent set of canonical AFFiNE pages carrying valid `asgard.mimir-record.v1` envelopes, revisions, classifications, status, and source metadata |
+| Outputs | New Mem0 generation containing deterministic chunks, only classification-permitted model fields, and a validation manifest |
 | Authority | Read-only AFFiNE indexer identity; write-only or generation-scoped Mem0 identity |
 | Persistence | Generation manifest, page/chunk hashes, validation outcome, active-generation pointer |
-| Failure behavior | Failed or partial generation remains inactive; current active index remains untouched |
+| Failure behavior | Malformed logical-model fields fail validation; a failed or partial generation remains inactive and the current active index remains untouched |
 | Acceptance test | Delete a disposable index, rebuild it twice, and obtain identical source/chunk manifests and representative search behavior |
 
 Manifest:

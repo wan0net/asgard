@@ -27,6 +27,13 @@ revisions. Mem0 is therefore a disposable semantic retrieval index: it helps
 find relevant material and can be erased and rebuilt from canonical content,
 but it is not a second source of truth.
 
+Mimir organizes canonical knowledge with a hybrid [Mimir knowledge
+model](../mimir-knowledge-model.md): PARA provides work context through
+Projects, Areas, Resources, and Archives, while typed records capture meaning
+such as decisions, people, meetings, commitments, preferences, procedures, and
+sources. Its governance lifecycle is separate from PARA, so Archive does not
+mean deletion.
+
 For an important claim, Ody first retrieves candidate references from Mem0 and
 then reads the corresponding canonical AFFiNE content. If AFFiNE and Mem0
 disagree, AFFiNE wins. This retrieval flow and the source metadata expected of
@@ -69,6 +76,7 @@ requirements, not claims about an installed product.
 ## See also
 
 - [Architecture](../architecture.md#mimir-authority-model)
+- [Mimir knowledge model](../mimir-knowledge-model.md)
 - [Tools, capabilities, and interaction boundaries](../tooling.md)
 - [Data flows](../data-flows.md#user-question-and-knowledge-retrieval)
 - [Integration contracts](../integration-contracts.md#4-mimir-search)

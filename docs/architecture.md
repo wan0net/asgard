@@ -286,6 +286,16 @@ flowchart LR
     Ody -->|"fetch canonical content"| Canon
 ```
 
+### Logical knowledge structure
+
+The canonical AFFiNE layer separates three independent axes: PARA work context
+(`Project`, `Area`, `Resource`, `Archive`); typed knowledge records (decisions,
+people, meetings, commitments, preferences, procedures, sources, and similar
+records); and governance lifecycle (`candidate`, `review`, `canonical`,
+`superseded`, `tombstoned`). PARA Archive is an inactive work context, not
+deletion or a lifecycle status. Detailed schemas remain in the [Mimir knowledge
+model](mimir-knowledge-model.md).
+
 Key invariants:
 
 - When AFFiNE and Mem0 disagree, AFFiNE wins.
@@ -297,6 +307,8 @@ Key invariants:
 - Huginn stores raw evidence or stages candidates; it does not silently promote
   external content into canonical pages.
 - Muninn proposes or applies only the classes of changes allowed by policy.
+- Record type, PARA context, and lifecycle status are independent and must not
+  be inferred from folder or view location alone.
 - Deletion and supersession are explicit human or retention-policy decisions,
   never an inference made solely by a model.
 
