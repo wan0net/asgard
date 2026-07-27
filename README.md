@@ -22,11 +22,12 @@
 </section>
 <!-- markdownlint-enable MD033 MD041 -->
 
-> [!IMPORTANT]
-> This repository describes a reference design and its intended controls. A
-> configuration is not proof that a deployment is secure or that an end-to-end
-> workflow has been verified. Deployments should record their own evidence,
-> exceptions, and validation results separately.
+!!! important
+
+    This repository describes a reference design and its intended controls. A
+    configuration is not proof that a deployment is secure or that an end-to-end
+    workflow has been verified. Deployments should record their own evidence,
+    exceptions, and validation results separately.
 
 ## Asgard roles
 
