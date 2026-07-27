@@ -735,16 +735,62 @@ pre,
 
 /* Portraits on individual role pages. */
 
+.md-typeset p:has(> img[alt$="portrait"]),
+.md-typeset p:has(> a > img[alt$="portrait"]) {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 0;
+}
+
 .md-typeset img[alt$="portrait"] {
   display: block;
   width: 320px;
   max-width: 100%;
   height: auto;
-  margin: 1rem 0 1.5rem;
+  margin: 0 auto;
   border: 1px solid var(--pantheon-border);
   border-radius: 0.75rem;
   background: var(--pantheon-surface);
   box-shadow: var(--pantheon-shadow);
+}
+
+.md-typeset
+  :is(
+    p:has(> img[alt$="portrait"]),
+    p:has(> a > img[alt$="portrait"])
+  )
+  + blockquote {
+  width: min(100%, 34rem);
+  margin: 1rem auto 2rem;
+  padding: 0.85rem 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--pantheon-border);
+  background: none;
+  color: var(--pantheon-text-muted);
+  font-size: 0.72rem;
+  font-style: italic;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.md-typeset
+  :is(
+    p:has(> img[alt$="portrait"]),
+    p:has(> a > img[alt$="portrait"])
+  )
+  + blockquote
+  > :first-child {
+  margin-top: 0;
+}
+
+.md-typeset
+  :is(
+    p:has(> img[alt$="portrait"]),
+    p:has(> a > img[alt$="portrait"])
+  )
+  + blockquote
+  > :last-child {
+  margin-bottom: 0;
 }
 
 @media screen and (max-width: 76.1875em) {
