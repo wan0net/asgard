@@ -14,13 +14,13 @@ not a collection of chatbots the user must coordinate.
 > workflow has been verified. Deployments should record their own evidence,
 > exceptions, and validation results separately.
 
-## The pantheon
+## Asgard roles
 
 This is the primary map; see [Tools, capabilities, and interaction boundaries](docs/tooling.md) for full product boundaries and interactions.
 
 | Image | Name | Function | Tool |
 | --- | --- | --- | --- |
-| [![Odine (Ody) avatar](docs/assets/avatars/odine.png)](docs/gods/odine.md) | [Odine (Ody)](docs/gods/odine.md) | The single user-facing assistant for conversation, reasoning, and orchestration. | Hermes Agent and interfaces |
+| [![Odine (Ody) avatar](docs/assets/avatars/odine.png)](docs/gods/odine.md) | [Odine (Ody)](docs/gods/odine.md) | The single user-facing assistant for conversation, reasoning, and orchestration. | Hermes Agent + Hermes WebUI + Hermex |
 | [![Mimir avatar](docs/assets/avatars/mimir.png)](docs/gods/mimir.md) | [Mimir](docs/gods/mimir.md) | Canonical knowledge in AFFiNE, with a rebuildable Mem0 retrieval index. | AFFiNE + Mem0 |
 | [![Muninn avatar](docs/assets/avatars/muninn.png)](docs/gods/muninn.md) | [Muninn](docs/gods/muninn.md) | Reviews completed conversations and prepares traceable knowledge candidates. | isolated scheduled Hermes worker |
 | [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted workers |
