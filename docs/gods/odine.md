@@ -2,9 +2,13 @@
 
 ![Odine (Ody) portrait](../assets/avatars/odine.png)
 
-Odine, or Ody, is Asgard's only user-facing assistant. The role is implemented
-by Hermes Agent and its interfaces. Ody handles conversation, reasoning, and
-orchestration without exposing internal agents to the user.
+Odine, or Ody, is Asgard's only user-facing assistant. Hermes Agent provides
+Ody's core assistant, reasoning, and tool runtime. Hermes WebUI is an optional
+rich browser interface with a compatible backend, and Hermex is an optional
+native client that uses that backend. These are interfaces to the same Odine
+identity and policy boundary, not separate assistants. Ody handles
+conversation, reasoning, and orchestration without exposing internal agents to
+the user.
 This is a reference-design role, not evidence that any deployment has enabled
 every interface or capability.
 
@@ -13,11 +17,16 @@ every interface or capability.
 | Aspect | Description |
 | --- | --- |
 | Function | The single conversational assistant; reasons about requests and coordinates bounded work. |
-| Reference tool(s) | Hermes Agent and its interfaces. |
+| Reference tool(s) | Hermes Agent is the core runtime; optional Hermes WebUI (browser interface and compatible backend) and Hermex (native client using that backend) expose the same Odine identity and policy boundary. Interface compatibility must be validated. |
 | Authority | May request permitted capabilities; it does not directly authorize or execute external actions. |
 | Trust zone | Assistant runtime. |
 
 ## What Odine does
+
+Hermes WebUI and Hermex do not expand Ody's authority or create separate
+assistant identities. Each optional interface must preserve the same channel
+identity, conversation isolation, and policy enforcement as Hermes Agent;
+compatibility is a validation requirement, not an assumed property.
 
 **Asgard policy:** Ody receives authenticated, normalized user requests and
 returns responses through the originating interface. It may request knowledge

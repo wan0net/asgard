@@ -33,7 +33,7 @@ nav:
   - Start here:
       - Getting started: docs/getting-started.md
       - Agent-assisted installation: docs/agent-assisted-install.md
-  - Pantheon:
+  - Asgard:
       - Odine (Ody): docs/gods/odine.md
       - Mimir: docs/gods/mimir.md
       - Muninn: docs/gods/muninn.md
