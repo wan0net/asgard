@@ -34,6 +34,7 @@ nav:
       - Architecture: docs/architecture.md
       - Tools and boundaries: docs/tooling.md
       - Data flows: docs/data-flows.md
+      - Transcript outbox: docs/transcript-outbox.md
       - Integration contracts: docs/integration-contracts.md
       - Security model: docs/security.md
       - Operations: docs/operations.md
