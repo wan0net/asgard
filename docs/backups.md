@@ -1,10 +1,11 @@
 # Backups
 
-> [!IMPORTANT]
-> This page is a **reference design**, not deployment evidence. It defines a
-> disabled-by-default Backrest foundation and the gates a deployment must pass.
-> Keep the Compose `backup` profile disabled until the acceptance evidence and
-> an isolated restore drill have been reviewed by a human operator.
+!!! important
+
+    This page is a **reference design**, not deployment evidence. It defines a
+    disabled-by-default Backrest foundation and the gates a deployment must pass.
+    Keep the Compose `backup` profile disabled until the acceptance evidence and
+    an isolated restore drill have been reviewed by a human operator.
 
 ## Claim labels
 
