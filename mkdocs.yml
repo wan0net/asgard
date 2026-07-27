@@ -37,6 +37,7 @@ nav:
       - Integration contracts: docs/integration-contracts.md
       - Security model: docs/security.md
       - Operations: docs/operations.md
+      - Backups and restore: docs/backups.md
   - Project:
       - Publishing: docs/publishing.md
       - Contributing: CONTRIBUTING.md
