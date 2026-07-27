@@ -16,13 +16,15 @@ not a collection of chatbots the user must coordinate.
 
 ## The pantheon
 
-| Capability | Reference implementation | Responsibility |
-| --- | --- | --- |
-| **Odine (Ody)** | Hermes | Conversation, reasoning, orchestration, and the single user-facing experience |
-| **Mimir** | AFFiNE + Mem0 | Canonical knowledge in AFFiNE, with Mem0 as a disposable and rebuildable semantic index |
-| **Muninn** | Isolated scheduled Hermes worker | Reviews completed conversations, extracts durable knowledge candidates, and proposes traceable updates |
-| **Huginn** | n8n | Collects external evidence and runs bounded, deterministic automations |
-| **Heimdall** | Executor.sh + supporting controls | Mediates external tool actions, applies policy, selects scoped connections, and records action evidence |
+This is the primary map; see [Tools, capabilities, and interaction boundaries](docs/tooling.md) for full product boundaries and interactions.
+
+| Image | Name | Function | Tool |
+| --- | --- | --- | --- |
+| [![Odine (Ody) avatar](docs/assets/avatars/odine.png)](docs/gods/odine.md) | [Odine (Ody)](docs/gods/odine.md) | The single user-facing assistant for conversation, reasoning, and orchestration. | Hermes Agent and interfaces |
+| [![Mimir avatar](docs/assets/avatars/mimir.png)](docs/gods/mimir.md) | [Mimir](docs/gods/mimir.md) | Canonical knowledge in AFFiNE, with a rebuildable Mem0 retrieval index. | AFFiNE + Mem0 |
+| [![Muninn avatar](docs/assets/avatars/muninn.png)](docs/gods/muninn.md) | [Muninn](docs/gods/muninn.md) | Reviews completed conversations and prepares traceable knowledge candidates. | isolated scheduled Hermes worker |
+| [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted workers |
+| [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + supporting controls |
 
 Heimdall is a logical security boundary rather than a single product:
 
