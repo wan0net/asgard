@@ -141,6 +141,8 @@ canonical knowledge.
   implementation boundaries, and capability gates
 - [Security model](docs/security.md)
 - [Operations](docs/operations.md)
+- [Backups and restore gates](docs/backups.md) — containerized,
+  append-oriented backup and restore-gate guide
 - [Agent-assisted installation](docs/agent-assisted-install.md)
 - [Publishing the documentation](docs/publishing.md)
 - [Contributing](CONTRIBUTING.md)
