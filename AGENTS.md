@@ -2,9 +2,9 @@
 
 ## Repository purpose
 
-This is the public Asgard reference architecture. It documents a self-hosted
-personal AI system with one user-facing assistant and separated knowledge,
-curation, collection, and tool-execution capabilities.
+This is the public Pantheon Blueprint reference architecture. It documents a
+self-hosted personal AI system with one user-facing assistant and separated
+knowledge, curation, collection, and tool-execution capabilities.
 
 Work here must remain reusable, public-safe, and independent of any one private
 deployment.
@@ -46,7 +46,7 @@ Never add or reproduce:
 Use obvious placeholders:
 
 ```text
-asgard.example.com
+pantheon.example.com
 192.0.2.10
 <WORKLOAD_IDENTITY>
 <SECRET_REFERENCE>
@@ -58,9 +58,9 @@ asgard.example.com
 A private Git repository is not a secret manager. Never commit decrypted
 secrets anywhere.
 
-## Relationship to `asgard-private`
+## Relationship to `pantheon-private`
 
-Do not read, search, clone, or copy from `asgard-private` unless the user
+Do not read, search, clone, or copy from `pantheon-private` unless the user
 explicitly authorizes that access for the current task.
 
 When authorized:
@@ -95,10 +95,14 @@ When changing statements about current product behavior:
 Label claims clearly:
 
 - **Upstream fact:** documented behavior of an upstream product.
-- **Asgard policy:** a requirement or recommendation of this architecture.
+- **Pantheon Blueprint policy:** a requirement or recommendation of this
+  architecture.
 - **Validation required:** behavior a deployment must demonstrate before
   relying on it.
 - **Optional:** a nonessential component or integration.
+
+Use [Readiness and assurance](docs/assurance.md) for maturity labels, validation
+gates, and evidence-record definitions.
 
 Do not describe a feature as implemented, enforced, self-healing, secure, or
 verified without a reproducible acceptance test and version-specific evidence.

@@ -1,25 +1,28 @@
 # Tools, capabilities, and interaction boundaries
 
-Asgard names architectural capabilities separately from the products selected
-to implement them. A capability describes a stable responsibility and trust
-boundary. A product is the current reference choice and can be replaced only if
-the replacement preserves the same authority, failure behavior, and validation
-requirements.
+Pantheon Blueprint names architectural capabilities separately from the
+products selected to implement them. A capability describes a stable
+responsibility and trust boundary. A product is the current reference choice
+and can be replaced only if the replacement preserves the same authority,
+failure behavior, and validation requirements.
 
 This page is a map of responsibilities and interactions, not a setup guide. The
 [architecture](architecture.md) defines the full design, the
 [integration contracts](integration-contracts.md) define the custom wiring, and
-the [security model](security.md) defines the required negative tests.
+the [security model](security.md) defines the required negative tests. Use
+[readiness and assurance](assurance.md) to distinguish a reference choice from
+an implemented or verified deployment.
 
 !!! important
 
     Product selection is not evidence that a control is enforced. Every access
     path, identity mapping, policy decision, backup, and telemetry filter remains
-    **validation required** in a real deployment.
+    **validation required** in a real deployment. Record that evidence through
+    the central [assurance model](assurance.md).
 
 ## Capability-to-product map
 
-| Architectural capability or gap | Asgard choice | Function and boundary | Status |
+| Architectural capability or gap | Pantheon Blueprint choice | Function and boundary | Status |
 | --- | --- | --- | --- |
 | Conversational reasoning and orchestration (**Odine/Ody**) | [Hermes Agent](https://hermes-agent.nousresearch.com/docs/) | Runs the single user-facing assistant and requests external actions through Heimdall | Core |
 | Local administration and basic browser chat | [Official Hermes dashboard](https://hermes-agent.nousresearch.com/docs/user-guide/features/web-dashboard) | Operates Hermes; keep it on the private administrative path rather than treating it as the normal published interface | Core, private |
@@ -31,7 +34,7 @@ the [security model](security.md) defines the required negative tests.
 | Conversation review and knowledge curation (**Muninn**) | Scheduled, isolated [Hermes](https://hermes-agent.nousresearch.com/docs/) worker | Reads durable checkpoints, proposes provenance-bearing changes, and uses its own profile and workload identity | Optional until validated |
 | Deterministic collection and automation (**Huginn**) | Self-hosted [n8n](https://docs.n8n.io/hosting/) | Schedules bounded workflows, deduplicates captures, and submits controlled tool requests | Optional |
 | Untrusted web retrieval | Restricted fetch and browser workers | Fetch or render hostile content away from credentials and canonical stores; workers receive only the minimum network and filesystem access | Supporting, validation required |
-| Tool mediation (**Heimdall**) | [Executor](https://executor.sh/docs/) plus Asgard policy, approval, identity selection, and audit controls | Authenticates workload callers, limits discovery, evaluates requests, selects scoped connector identities, and returns filtered results | Core design boundary, validation required |
+| Tool mediation (**Heimdall**) | [Executor](https://executor.sh/docs/) plus Pantheon Blueprint policy, approval, identity selection, and audit controls | Authenticates workload callers, limits discovery, evaluates requests, selects scoped connector identities, and returns filtered results | Core design boundary, validation required |
 | **HTTP edge routing and TLS gap** | [Traefik](https://doc.traefik.io/traefik/) | Terminates or participates in the documented TLS design and routes only declared HTTP services on each host | Core |
 | **Private overlay networking and administrator-connectivity gap** | [Tailscale](https://tailscale.com/docs/features/access-control) | Carries host-to-host, private API, administration, and recovery traffic under tailnet access rules | Core |
 | **Deliberately published authenticated remote-access gap** | [Pangolin](https://docs.pangolin.net/manage/resources/understanding-resources) | Publishes only selected human-facing resources and adds a remote access authentication boundary | Optional unless remote publication is needed |
@@ -63,11 +66,11 @@ Keep these concerns separate in design reviews and acceptance tests:
 | **Tool policy** | May this authenticated workload discover and invoke this tool with these arguments, target, and approval state? | That the downstream application will independently authorize the selected account |
 | **Observability** | What redacted evidence shows health, flow, and outcomes? | Permission, approval, canonical audit authority, or proof that enforcement worked |
 
-**Asgard policy:** passing one layer never implies passing the next. For
-example, Tailscale reachability does not replace application authentication;
-Pangolin authentication does not replace application authorization; Traefik
-routing does not grant tool permission; and Grafana telemetry does not approve
-or audit an action.
+**Pantheon Blueprint policy:** passing one layer never implies passing the next.
+For example, Tailscale reachability does not replace application
+authentication; Pangolin authentication does not replace application
+authorization; Traefik routing does not grant tool permission; and Grafana
+telemetry does not approve or audit an action.
 
 ## How the tools interact
 

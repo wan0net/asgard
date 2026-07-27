@@ -1,10 +1,13 @@
 # Publishing the documentation
 
-Asgard uses MkDocs with the Material theme to render this repository's complete
-documentation set. A small build helper stages the root-level project documents
-beside `docs/` in a temporary directory. This keeps source-relative links
-working and includes the extensionless `LICENSE` as a rendered page without
-committing a duplicate copy.
+Pantheon Blueprint uses MkDocs with the Material theme to render this
+repository's complete documentation set. A small build helper stages the
+root-level project documents beside `docs/` in a temporary directory before
+running MkDocs. This keeps source-relative links working and includes the
+extensionless `LICENSE` as a rendered page without committing a duplicate copy.
+The published set therefore includes the blueprint, role and deployment guides,
+the [readiness and assurance model](assurance.md), and the root-level project
+documents.
 
 ## Local setup
 
@@ -33,7 +36,7 @@ The helper prints the generated site's temporary output directory. To select a
 known disposable location instead:
 
 ```bash
-python scripts/build-docs.py build --site-dir /tmp/asgard-site
+python scripts/build-docs.py build --site-dir /tmp/pantheon-site
 ```
 
 Preview the staged documentation at `http://127.0.0.1:8000/`:

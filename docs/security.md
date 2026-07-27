@@ -1,13 +1,17 @@
 # Security
 
-Asgard joins language models, personal communications, a knowledge base, browser
-automation, and privileged tools. That combination should be treated as a
-security-sensitive distributed system, not as a chatbot with a long system
-prompt.
+Pantheon Blueprint joins language models, personal communications, a knowledge
+base, browser automation, and privileged tools. That combination should be
+treated as a security-sensitive distributed system, not as a chatbot with a
+long system prompt.
 
 This chapter is a public threat model and hardening guide. It describes required
 controls and acceptance evidence. It does not certify Hermes, Executor, AFFiNE,
 Mem0, n8n, or any other dependency.
+
+Shared maturity labels, readiness gates, and evidence-record semantics live in
+[Readiness and assurance](assurance.md). This chapter owns the security controls
+and the security-specific acceptance and negative tests.
 
 ## Security objective
 
@@ -58,7 +62,7 @@ recovery plans even when they are operated outside this repository.
 
 ## Adversaries and failure modes
 
-Asgard should assume the following:
+Pantheon Blueprint should assume the following:
 
 - A public webpage, feed, email, attachment, repository, issue, or tool result
   may contain indirect prompt injection.
@@ -490,7 +494,7 @@ general local shell.
 Use a dedicated root such as:
 
 ```text
-/var/lib/asgard/ody-workspace/
+/var/lib/pantheon/ody-workspace/
 ```
 
 Separate subdirectories:

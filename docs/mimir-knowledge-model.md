@@ -6,7 +6,8 @@ permitted content into disposable, rebuildable Mem0 semantic retrieval.
 
 This page is the shared public conceptual and contract model. Deployment-specific
 identities, hostnames, credentials, connector versions, runtime status, and
-operational evidence belong only in the private Asgard operations repository.
+operational evidence belong only in the private `pantheon-private` operations
+repository.
 
 This reference design is not a claim that an integration is operational.
 Deployments must pin and validate their AFFiNE and Mem0 integrations before use;
@@ -205,7 +206,7 @@ Each indexed object includes metadata equivalent to:
 memory_id: generated-uuid
 source_type: affine_page
 source_id: stable-affine-page-id
-source_url: https://mimir.asgard.example.com/...
+source_url: https://mimir.pantheon.example.com/...
 revision: source-revision-or-hash
 classification: private
 status: canonical
@@ -281,4 +282,5 @@ human review and approval.
 - [Mimir authority model](architecture.md#mimir-authority-model)
 - [Mimir search contract](integration-contracts.md#4-mimir-search)
 - [Data flows](data-flows.md)
+- [Readiness and assurance](assurance.md)
 - [Security model](security.md)

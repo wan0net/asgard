@@ -1,10 +1,10 @@
 # Integration contracts
 
-Asgard is an architecture assembled from upstream products and a small set of
-required adapters, policies, and durable workflows.
+Pantheon Blueprint is an architecture assembled from upstream products and a
+small set of required adapters, policies, and durable workflows.
 
-> No supplied upstream component automatically provides the complete Asgard
-> wiring.
+> No supplied upstream component automatically provides the complete Pantheon
+> Blueprint wiring.
 
 Installing Hermes, Executor, AFFiNE, Mem0, and n8n does not by itself create the
 identity, authority, provenance, approval, indexing, update, or audit behavior
@@ -12,9 +12,13 @@ described in the architecture. The base installation must keep each dependent
 capability disabled until its contract in this document is implemented and its
 acceptance test passes.
 
+This page owns interface-specific contracts and their verification. [Readiness
+and assurance](assurance.md) owns the shared maturity labels, gate matrix, and
+generic evidence requirements used to judge the system as a whole.
+
 This document defines logical operations. Names such as `mimir.search` are
-Asgard contract names, not claims that an upstream product exposes an endpoint
-with that name.
+Pantheon Blueprint contract names, not claims that an upstream product exposes
+an endpoint with that name.
 
 ## Classification
 
@@ -22,21 +26,21 @@ Each integration is classified as one of:
 
 | Classification | Meaning |
 | --- | --- |
-| **Upstream-supported** | The pinned upstream product documents the underlying capability. Asgard still configures and constrains it. |
-| **Asgard custom adapter/policy** | Asgard must supply glue, a wrapper, a schema, policy, or durable workflow. |
+| **Upstream-supported** | The pinned upstream product documents the underlying capability. Pantheon Blueprint still configures and constrains it. |
+| **Pantheon Blueprint custom adapter/policy** | Pantheon Blueprint must supply glue, a wrapper, a schema, policy, or durable workflow. |
 | **Optional/experimental** | Useful, but not required for the secure base system and not enabled by default. |
 | **Blocked pending validation** | Keep the dependent capability off until behavior is proven against the pinned release. |
 
 One contract may use an upstream-supported substrate while still requiring an
-Asgard adapter.
+Pantheon Blueprint adapter.
 
 ## Contract inventory
 
-| Contract | Upstream substrate | Asgard classification | Default enablement |
+| Contract | Upstream substrate | Pantheon Blueprint classification | Default enablement |
 | --- | --- | --- | --- |
 | Channel normalization | Hermes messaging gateway and sessions | Upstream-supported substrate + custom policy | Read-only interfaces after identity tests |
 | Workload authentication to Heimdall | Executor MCP endpoint and connection catalogue | Custom adapter; shared-caller multiplexing blocked pending validation | Separate workload endpoints only |
-| Per-agent Executor separation | Multiple deployable Executor processes/instances | Asgard security baseline | Required until multiplexing passes |
+| Per-agent Executor separation | Multiple deployable Executor processes/instances | Pantheon Blueprint security baseline | Required until multiplexing passes |
 | Mimir search | Mem0 search capability | Custom adapter | Read-only after classification tests |
 | Canonical AFFiNE read/write | Version-pinned AFFiNE connector selected by the deployer | Custom adapter; writes blocked pending identity validation | Reads first; writes off |
 | AFFiNE-to-Mem0 indexing | AFFiNE export/connector + Mem0 storage/search | Custom adapter | Off until full rebuild passes |
@@ -54,7 +58,7 @@ All requests crossing a trust boundary use a versioned envelope:
 
 ```json
 {
-  "schema": "asgard.request.v1",
+  "schema": "pantheon.request.v1",
   "request_id": "<opaque-request-id>",
   "task_id": "<opaque-task-id>",
   "occurred_at": "<rfc3339-timestamp>",
@@ -78,7 +82,7 @@ content:
 
 ```json
 {
-  "schema": "asgard.error.v1",
+  "schema": "pantheon.error.v1",
   "request_id": "<opaque-request-id>",
   "code": "policy_denied",
   "retryable": false,
@@ -132,9 +136,10 @@ Revalidate affected contracts before promoting a component or contract version.
 ## 1. Channel normalization
 
 Hermes documents a unified messaging gateway, persisted sessions, and multiple
-channel sources. Asgard adds a normalized owner and reply-route contract.
+channel sources. Pantheon Blueprint adds a normalized owner and reply-route
+contract.
 
-**Classification:** Upstream-supported substrate + Asgard custom policy.
+**Classification:** Upstream-supported substrate + Pantheon Blueprint custom policy.
 
 | Property | Contract |
 | --- | --- |
@@ -148,7 +153,7 @@ channel sources. Asgard adds a normalized owner and reply-route contract.
 Example:
 
 ```yaml
-schema: asgard.channel-message.v1
+schema: pantheon.channel-message.v1
 message_id: "<opaque-message-id>"
 owner_id: "<derived-owner-id>"
 channel: "signal"
@@ -173,10 +178,10 @@ Upstream basis:
 ## 2. Workload authentication to Heimdall
 
 Executor provides the integration, connection, policy, and MCP gateway
-substrate. Asgard requires a trusted binding between the calling workload and
-the Executor endpoint or connection set.
+substrate. Pantheon Blueprint requires a trusted binding between the calling
+workload and the Executor endpoint or connection set.
 
-**Classification:** Asgard custom adapter/policy. Authenticated shared-caller
+**Classification:** Pantheon Blueprint custom adapter/policy. Authenticated shared-caller
 multiplexing is blocked pending validation.
 
 | Property | Contract |
@@ -192,7 +197,7 @@ Logical request:
 
 ```json
 {
-  "schema": "asgard.tool-request.v1",
+  "schema": "pantheon.tool-request.v1",
   "request_id": "<opaque-request-id>",
   "tool": "<registered-semantic-tool>",
   "arguments": {},
@@ -220,7 +225,7 @@ instance, process, profile, or isolated connector endpoint for each workload.
 An instance is the strongest default where a profile is not documented as a
 security boundary.
 
-**Classification:** Asgard custom deployment policy.
+**Classification:** Pantheon Blueprint custom deployment policy.
 
 Reference layout:
 
@@ -259,10 +264,10 @@ complete audit correlation.
 
 ## 4. Mimir search
 
-Mem0 supplies the search substrate. Asgard constrains results to references to
-canonical AFFiNE pages.
+Mem0 supplies the search substrate. Pantheon Blueprint constrains results to
+references to canonical AFFiNE pages.
 
-**Classification:** Upstream-supported substrate + Asgard custom adapter.
+**Classification:** Upstream-supported substrate + Pantheon Blueprint custom adapter.
 
 The [Mimir knowledge model](mimir-knowledge-model.md) defines the page
 conventions behind this index. Canonical AFFiNE pages use exactly seven
@@ -286,7 +291,7 @@ Example result:
 
 ```json
 {
-  "schema": "asgard.mimir-search-result.v1",
+  "schema": "pantheon.mimir-search-result.v1",
   "query_id": "<opaque-query-id>",
   "index_generation": "<opaque-generation-id>",
   "results": [
@@ -316,14 +321,14 @@ Upstream basis:
 
 ## 5. Canonical AFFiNE reader and writer
 
-Asgard requires a version-pinned connector that can read and, when explicitly
-enabled, write the selected AFFiNE deployment while preserving downstream user
-attribution.
+Pantheon Blueprint requires a version-pinned connector that can read and, when
+explicitly enabled, write the selected AFFiNE deployment while preserving
+downstream user attribution.
 
-**Classification:** Asgard custom adapter. Writes are blocked pending connector,
+**Classification:** Pantheon Blueprint custom adapter. Writes are blocked pending connector,
 identity, and audit validation.
 
-Asgard does not prescribe or invent an AFFiNE API or MCP endpoint in this
+Pantheon Blueprint does not prescribe or invent an AFFiNE API or MCP endpoint in this
 contract. The deployer must select an actively maintained connector, pin its
 version and source, document its supported operations, and validate it against
 the pinned AFFiNE release.
@@ -347,7 +352,7 @@ implementation.
 Logical write request:
 
 ```yaml
-schema: asgard.affine-change.v1
+schema: pantheon.affine-change.v1
 change_id: "<opaque-change-id>"
 workspace_id: "<stable-workspace-id>"
 page_id: "<stable-page-id>"
@@ -361,7 +366,7 @@ classification: "private"
 idempotency_key: "<opaque-idempotency-key>"
 ```
 
-`asgard.affine-change.v1` remains the change transport envelope. The referenced
+`pantheon.affine-change.v1` remains the change transport envelope. The referenced
 diff proposes an AFFiNE page that follows the Mimir page conventions, including
 the applicable conventional type, `canonical_state`, `review_state`,
 classification, and authorized provenance or source references. Sensitive
@@ -380,10 +385,10 @@ and operation names.
 ## 6. Deterministic AFFiNE-to-Mem0 indexer
 
 The indexer translates accepted AFFiNE content into a rebuildable Mem0
-generation. Neither upstream product supplies the complete Asgard authority and
-generation contract.
+generation. Neither upstream product supplies the complete Pantheon Blueprint
+authority and generation contract.
 
-**Classification:** Asgard custom adapter.
+**Classification:** Pantheon Blueprint custom adapter.
 
 | Property | Contract |
 | --- | --- |
@@ -397,7 +402,7 @@ generation contract.
 Manifest:
 
 ```yaml
-schema: asgard.index-generation.v1
+schema: pantheon.index-generation.v1
 generation_id: "<opaque-generation-id>"
 created_at: "<rfc3339-timestamp>"
 affine_snapshot: "<opaque-snapshot-reference>"
@@ -426,10 +431,10 @@ independently extracting or rewriting facts.
 Hermes documents persisted sessions and a session API. The pinned Hermes
 `v0.19.0` compatibility review found no suitable built-in redacted incremental
 export or reliable completion event for long-lived Signal and WebUI sessions,
-so Asgard supplies a narrow compatibility adapter. This is a version-specific
+so Pantheon Blueprint supplies a narrow compatibility adapter. This is a version-specific
 finding, not a claim about current or future Hermes releases.
 
-**Classification:** Upstream-supported session/API substrate + gated Asgard
+**Classification:** Upstream-supported session/API substrate + gated Pantheon Blueprint
 compatibility adapter.
 
 | Property | Contract |
@@ -445,7 +450,7 @@ compatibility adapter.
 Generic manifest:
 
 ```yaml
-schema: asgard.transcript-manifest.v1
+schema: pantheon.transcript-manifest.v1
 sequence: 7
 previous_manifest_hash: "<sha256>"
 objects:
@@ -460,7 +465,7 @@ manifest_hash: "<sha256>"
 Generic checkpoint:
 
 ```yaml
-schema: asgard.muninn-checkpoint.v1
+schema: pantheon.muninn-checkpoint.v1
 committed_sequence: 7
 committed_manifest_hash: "<sha256>"
 lease_reference: "<opaque-lease-reference>"
@@ -496,9 +501,9 @@ Upstream basis:
 ## 8. Huginn capture staging and event handoff
 
 n8n supplies scheduling, workflow, webhook, and connector building blocks.
-Asgard defines the immutable capture and curation-event boundary.
+Pantheon Blueprint defines the immutable capture and curation-event boundary.
 
-**Classification:** Upstream-supported workflow substrate + Asgard custom
+**Classification:** Upstream-supported workflow substrate + Pantheon Blueprint custom
 workflow contract.
 
 | Property | Contract |
@@ -513,7 +518,7 @@ workflow contract.
 Monitor:
 
 ```yaml
-schema: asgard.monitor.v1
+schema: pantheon.monitor.v1
 monitor_id: "<opaque-monitor-id>"
 source: "<approved-public-url>"
 schedule: "<bounded-schedule>"
@@ -527,7 +532,7 @@ Capture event:
 
 ```json
 {
-  "schema": "asgard.capture-ready.v1",
+  "schema": "pantheon.capture-ready.v1",
   "event_id": "<opaque-event-id>",
   "capture_id": "<opaque-capture-id>",
   "monitor_id": "<opaque-monitor-id>",
@@ -549,11 +554,14 @@ Upstream basis:
 
 ## 9. Durable approval and WebUI/Signal resume
 
-Executor documents per-tool policy as an upstream concept. Asgard requires
-durable pending state, exact action binding, and delivery/resume bridges for
-Hermes WebUI and Signal.
+Executor documents per-tool policy as an upstream concept. Its merged
+[native elicitation fix](https://github.com/UsefulSoftwareCo/executor/pull/1459)
+preserves native MCP elicitation for self-hosted in-memory sessions. Pantheon
+Blueprint still requires a pinned release, local validation, durable pending
+state, exact action binding, and delivery/resume bridges for Hermes WebUI and
+Signal.
 
-**Classification:** Asgard custom service; blocked pending end-to-end
+**Classification:** Pantheon Blueprint custom service; blocked pending end-to-end
 validation.
 
 | Property | Contract |
@@ -568,7 +576,7 @@ validation.
 Approval record:
 
 ```yaml
-schema: asgard.approval.v1
+schema: pantheon.approval.v1
 approval_id: "<opaque-approval-id>"
 short_id: "<non-secret-short-id>"
 owner_id: "<derived-owner-id>"
@@ -591,7 +599,7 @@ Resume:
 
 ```json
 {
-  "schema": "asgard.approval-decision.v1",
+  "schema": "pantheon.approval-decision.v1",
   "approval_id": "<opaque-approval-id>",
   "decision": "approve_once",
   "owner_id": "<derived-from-interface-authentication>",
@@ -613,11 +621,11 @@ Upstream basis:
 
 ## 10. Ody update broker
 
-Hermes and the deployment platform may each provide update operations. Asgard
-requires a narrow broker that converts an owner request into a pinned,
-reviewable, recoverable stack update.
+Hermes and the deployment platform may each provide update operations. Pantheon
+Blueprint requires a narrow broker that converts an owner request into a
+pinned, reviewable, recoverable stack update.
 
-**Classification:** Asgard custom privileged adapter.
+**Classification:** Pantheon Blueprint custom privileged adapter.
 
 | Property | Contract |
 | --- | --- |
@@ -631,7 +639,7 @@ reviewable, recoverable stack update.
 Request:
 
 ```yaml
-schema: asgard.update-request.v1
+schema: pantheon.update-request.v1
 request_id: "<opaque-request-id>"
 component: "ody"
 intent: "check-and-propose"
@@ -643,7 +651,7 @@ requested_by: "<derived-owner-id>"
 Proposal:
 
 ```yaml
-schema: asgard.update-proposal.v1
+schema: pantheon.update-proposal.v1
 proposal_id: "<opaque-proposal-id>"
 component: "ody"
 from: "<pinned-current-version>"
@@ -661,11 +669,11 @@ credential.
 
 ## 11. Audit record sink
 
-Product logs and Grafana Cloud are useful observability sources. Asgard requires
-a security record that correlates authenticated caller, policy, approval,
-connector, action, and result without recording secrets.
+Product logs and Grafana Cloud are useful observability sources. Pantheon
+Blueprint requires a security record that correlates authenticated caller,
+policy, approval, connector, action, and result without recording secrets.
 
-**Classification:** Asgard custom adapter/policy.
+**Classification:** Pantheon Blueprint custom adapter/policy.
 
 | Property | Contract |
 | --- | --- |
@@ -680,7 +688,7 @@ Record:
 
 ```json
 {
-  "schema": "asgard.audit.v1",
+  "schema": "pantheon.audit.v1",
   "event_id": "<opaque-event-id>",
   "event_type": "tool.completed",
   "occurred_at": "<rfc3339-timestamp>",
@@ -768,10 +776,10 @@ For every step:
 The private deployment should maintain one record per contract:
 
 ```yaml
-schema: asgard.integration-readiness.v1
+schema: pantheon.integration-readiness.v1
 contract: "canonical-affine-writer"
 contract_version: "v1"
-classification: "asgard-custom-adapter"
+classification: "pantheon-custom-adapter"
 upstream:
   product: "<product-name>"
   version: "<pinned-version-or-digest>"
@@ -803,4 +811,4 @@ Use upstream sources to confirm the substrate available in the pinned release:
 - [n8n hosting documentation](https://docs.n8n.io/hosting/)
 
 Upstream documentation describes product behavior. This document defines how
-Asgard composes those behaviors into a bounded system.
+Pantheon Blueprint composes those behaviors into a bounded system.

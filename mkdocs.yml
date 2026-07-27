@@ -2,7 +2,7 @@ site_name: Pantheon Blueprint
 site_description: An Open reference Architecture for Intelligent Agent Systems
 site_url: https://wan0.net/asgard/
 repo_url: https://github.com/wan0net/asgard
-repo_name: wan0net/asgard
+repo_name: Pantheon Blueprint on GitHub
 
 theme:
   name: material
@@ -49,25 +49,27 @@ extra_css:
 
 nav:
   - Home: README.md
-  - Start here:
-      - Getting started: docs/getting-started.md
-      - Agent-assisted installation: docs/agent-assisted-install.md
-  - Asgard:
+  - Understand:
+      - Architecture: docs/architecture.md
+      - End-to-end flows: docs/data-flows.md
+      - Tools and platform: docs/tooling.md
+      - Mimir knowledge model: docs/mimir-knowledge-model.md
+  - Roles:
       - Odine (Ody): docs/gods/odine.md
       - Mimir: docs/gods/mimir.md
       - Muninn: docs/gods/muninn.md
       - Huginn: docs/gods/huginn.md
       - Heimdall: docs/gods/heimdall.md
-  - Design:
-      - Architecture: docs/architecture.md
-      - Mimir knowledge model: docs/mimir-knowledge-model.md
-      - Tools and boundaries: docs/tooling.md
-      - Data flows: docs/data-flows.md
-      - Transcript outbox: docs/transcript-outbox.md
+  - Deploy:
+      - Getting started: docs/getting-started.md
+      - Agent-assisted installation: docs/agent-assisted-install.md
       - Integration contracts: docs/integration-contracts.md
-      - Security model: docs/security.md
+      - Transcript outbox: docs/transcript-outbox.md
       - Operations: docs/operations.md
       - Backups and restore: docs/backups.md
+  - Assure:
+      - Readiness and assurance: docs/assurance.md
+      - Security model: docs/security.md
   - Project:
       - Publishing: docs/publishing.md
       - Contributing: CONTRIBUTING.md

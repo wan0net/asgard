@@ -4,7 +4,7 @@
 
 > *“I fetch the outside world so everyone else can pretend the internet is a controlled input.”*
 
-Huginn is Asgard's external-evidence collection and bounded, deterministic
+Huginn is Pantheon Blueprint's external-evidence collection and bounded, deterministic
 automation role. Self-hosted n8n fills the generic scheduling and workflow
 automation gap; restricted fetch and browser workers fill the separate gap of
 retrieving or rendering untrusted web material in containment. Together they
@@ -23,7 +23,7 @@ itself establish the required identity, staging, or containment controls.
 
 ## What Huginn does
 
-**Asgard policy:** n8n coordinates approved monitors and allowlisted
+**Pantheon Blueprint policy:** n8n coordinates approved monitors and allowlisted
 workflows against a bounded source allowlist, schedule, and fetch policy. It
 requests tools as Huginn through
 [Heimdall](../tooling.md#internal-tool-request-path), using Huginn's own
@@ -60,15 +60,13 @@ hold raw downstream credentials, access private networks through untrusted
 content, expose its editor by default, or fall back to direct connectors when
 Heimdall denies or cannot complete a request.
 
-## Validation
+## Readiness
 
-**Validation required:** Keep a Huginn workflow disabled until a bounded
-canary shows that a changed source creates one staged capture and one
-idempotent event, while unchanged content creates no duplicate. Demonstrate
-that its workload identity cannot use another connection; hostile content
-cannot reach private networks or canonical AFFiNE; and failed fetch,
-normalization, storage, or delivery leaves no premature event. These are
-acceptance requirements, not claims that a deployment has passed them.
+Use [Readiness and assurance](../assurance.md) as the single gate matrix for
+Huginn. Durable flow and control expectations remain in
+[Data flows](../data-flows.md),
+[Integration contracts](../integration-contracts.md), and the
+[Security model](../security.md).
 
 ## See also
 

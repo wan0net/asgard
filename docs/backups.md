@@ -10,7 +10,7 @@
 ## Claim labels
 
 - **Upstream fact:** behavior described by official product documentation.
-- **Asgard policy:** a requirement of this reference architecture.
+- **Pantheon Blueprint policy:** a requirement of this reference architecture.
 - **Validation required:** behavior a deployment must demonstrate for its exact
   versions, provider, identities, and configuration.
 - **Optional:** data that may be rebuilt instead of backed up.
@@ -67,7 +67,7 @@ exposed to clients and recommends keeping the UI and administrative endpoints
 on a trusted network. See
 [Backrest multihost sync](https://garethgeorge.github.io/backrest/docs/multihost).
 
-**Asgard policy:** private routing is necessary but not sufficient. Authenticate
+**Pantheon Blueprint policy:** private routing is necessary but not sufficient. Authenticate
 the UI, restrict its route to the administrative access plane, and expose only
 the sync path required by the pinned Backrest release. Do not publish any
 Backrest endpoint to the public internet.
@@ -84,7 +84,7 @@ The container invokes its bundled restic binary at `/bin/restic`. A deployment
 must record the resolved platform image ID and confirm the expected Backrest and
 restic versions before activation.
 
-**Asgard policy:**
+**Pantheon Blueprint policy:**
 
 - Keep every Backrest service behind an explicit, disabled `backup` Compose
   profile until all gates pass.
@@ -113,7 +113,7 @@ Read-only access would still allow those values to be copied into the backup.
 The stable staging parent on each host is shaped like:
 
 ```text
-/data/asgard-backup-staging/<HOST_ROLE>
+/data/pantheon-backup-staging/<HOST_ROLE>
 ```
 
 Mount that parent read-only in Backrest at `/staging/<HOST_ROLE>` and configure
@@ -129,7 +129,7 @@ depending on restic path and filesystem behavior, the link itself can be
 archived instead of the intended tree.
 
 Nothing under a raw application root such as
-`/data/asgard/<HOST_ROLE>` is mounted into Backrest. The staging producer, not
+`/data/pantheon/<HOST_ROLE>` is mounted into Backrest. The staging producer, not
 Backrest, knows how to quiesce or export each application safely.
 
 Every stage must contain:
@@ -143,7 +143,7 @@ Every stage must contain:
 - the staging procedure result; and
 - a completion marker written only after all checks pass.
 
-**Asgard policy:** the backup plan fails closed when staging is absent,
+**Pantheon Blueprint policy:** the backup plan fails closed when staging is absent,
 incomplete, stale, concurrently changing, missing its completion marker, or
 fails checksum and consistency validation. It must never fall back to a raw
 application path or a previous generation.
@@ -160,12 +160,12 @@ They are templates, not evidence of installed units. Their deployment
 configuration contains placeholders only, for example:
 
 ```ini
-ASGARD_HOST_ROLE=<HOST_ROLE>
-ASGARD_COMPOSE_PROJECT=<COMPOSE_PROJECT>
-ASGARD_COMPOSE_FILE=<ABSOLUTE_COMPOSE_FILE>
-ASGARD_STAGE_ROOT=<ABSOLUTE_STAGING_PARENT>
-ASGARD_WRITER_ALLOWLIST=<ORDERED_COMPOSE_SERVICE_ALLOWLIST>
-ASGARD_MAX_STAGE_AGE=<APPROVED_DURATION>
+PANTHEON_HOST_ROLE=<HOST_ROLE>
+PANTHEON_COMPOSE_PROJECT=<COMPOSE_PROJECT>
+PANTHEON_COMPOSE_FILE=<ABSOLUTE_COMPOSE_FILE>
+PANTHEON_STAGE_ROOT=<ABSOLUTE_STAGING_PARENT>
+PANTHEON_WRITER_ALLOWLIST=<ORDERED_COMPOSE_SERVICE_ALLOWLIST>
+PANTHEON_MAX_STAGE_AGE=<APPROVED_DURATION>
 ```
 
 Store the resolved environment in a root-owned, mode-restricted file outside
@@ -234,17 +234,17 @@ the approved ownership and ACL policy. Validate stderr, exit status, and the
 archive table of contents. PostgreSQL stays online; only application writers
 are quiesced.
 
-**Asgard policy:** the AFFiNE database archive and blob archive are one
+**Pantheon Blueprint policy:** the AFFiNE database archive and blob archive are one
 recovery point and must share one identifier and manifest. Quiescing AFFiNE
 writers while creating both payloads is the consistency boundary. This pairing
-is an Asgard restore policy, not an upstream AFFiNE guarantee.
+is a Pantheon Blueprint restore policy, not an upstream AFFiNE guarantee.
 
 **Upstream fact:** n8n uses its encryption key for stored credentials; see
 [n8n custom encryption-key configuration](https://docs.n8n.io/hosting/configuration/configuration-examples/encryption-key/).
 The manifest records the approved secret-system reference and version for the
 matching key, never the value.
 
-**Asgard policy:** local n8n binary execution data is non-authoritative and is
+**Pantheon Blueprint policy:** local n8n binary execution data is non-authoritative and is
 omitted. n8n documents external storage as a separate store for binary data
 produced by workflow executions; see
 [n8n external binary storage](https://docs.n8n.io/hosting/scaling/external-storage/).
@@ -252,7 +252,7 @@ If an approved deployment later requires that data for recovery, incorporate
 the external store explicitly and prove its consistency and restore behavior
 before changing this allowlist.
 
-**Asgard policy:** Executor's SQLite database and any present WAL and shared
+**Pantheon Blueprint policy:** Executor's SQLite database and any present WAL and shared
 memory files are one quiesced set. The manifest records only the approved
 secret-system reference and version for the matching application key. Never
 copy either key value into staging.
@@ -268,7 +268,7 @@ Normal agent and workflow actions pass through Heimdall. Backup and recovery
 traffic is a narrow infrastructure exception because recovery cannot depend on
 Heimdall, the tools plane, or the application networks already being healthy.
 
-**Asgard policy:**
+**Pantheon Blueprint policy:**
 
 - Give Backrest a dedicated egress network that is not an application network.
 - Permit only the approved object-storage endpoint, private multihost route,
@@ -293,7 +293,7 @@ was created without it. Review the provider's current
 [Object Lock documentation](https://help.ovhcloud.com/csm/en-au-public-cloud-storage-s3-managing-object-lock?id=kb_article_view&sysparm_article=KB0034736)
 for the selected region and service.
 
-**Asgard policy:**
+**Pantheon Blueprint policy:**
 
 - Enable versioning and Object Lock when creating the dedicated backup bucket.
 - Configure no lifecycle rule that expires current versions, prior versions, or
@@ -344,7 +344,7 @@ the client uses its registered identity rather than retaining the pairing
 token. See the
 [Backrest multihost setup](https://garethgeorge.github.io/backrest/docs/multihost).
 
-**Asgard policy:** assign a unique, permanent instance ID to each instance.
+**Pantheon Blueprint policy:** assign a unique, permanent instance ID to each instance.
 Generate short-lived, single-use tokens with minimum permissions, pair each
 client once to the central instance, confirm the expected identity, and then
 discard the tokens. Never place pairing tokens in Git or deployment evidence.
@@ -445,6 +445,10 @@ A drill that can overwrite production, reuse production destinations, or call
 production integrations has failed its isolation gate.
 
 ## Activation gates and evidence
+
+The shared maturity labels, gate semantics, and evidence-record format live in
+[Readiness and assurance](assurance.md). This page owns the backup, verification,
+and isolated-restore checks below.
 
 Keep the disabled profile closed until a human operator has reviewed evidence
 for all of these gates:

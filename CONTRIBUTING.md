@@ -1,11 +1,11 @@
-# Contributing to Asgard
+# Contributing to Pantheon Blueprint
 
-Thank you for helping improve Asgard.
+Thank you for helping improve Pantheon Blueprint.
 
-Asgard is a documentation-first reference architecture for a self-hosted
-personal AI system. Contributions should make the design easier to understand,
-deploy, validate, or operate without presenting one private deployment as a
-universal solution.
+Pantheon Blueprint is a documentation-first reference architecture for a
+self-hosted personal AI system. Contributions should make the design easier to
+understand, deploy, validate, or operate without presenting one private
+deployment as a universal solution.
 
 ## Public-safety rules
 
@@ -27,7 +27,7 @@ Never submit:
 Use obvious placeholders such as:
 
 ```text
-asgard.example.com
+pantheon.example.com
 192.0.2.10
 <WORKLOAD_IDENTITY>
 <SECRET_REFERENCE>
@@ -47,16 +47,17 @@ Documentation must distinguish:
 
 - **Upstream fact:** behavior supported by current official project
   documentation.
-- **Asgard policy:** a requirement or recommendation of this reference
-  architecture.
+- **Pantheon Blueprint policy:** a requirement or recommendation of this
+  reference architecture.
 - **Validation required:** behavior that a real deployment must demonstrate
   before relying on it.
 - **Optional:** a component or integration that is not necessary for the
   minimal architecture.
 
 Do not describe a control as implemented or verified merely because a Compose
-file, prompt, policy, or product feature exists. State the versions, assumptions,
-and acceptance test required to support the claim.
+file, prompt, policy, or product feature exists. Use the shared maturity and
+evidence definitions in [Readiness and assurance](docs/assurance.md), and state
+the versions, assumptions, and acceptance test required to support the claim.
 
 ## Scope
 
@@ -75,7 +76,7 @@ product promotion without technical evidence are out of scope.
 
 ## License for contributions
 
-Asgard is licensed under
+Pantheon Blueprint is licensed under
 [Creative Commons Attribution-NonCommercial 4.0 International](LICENSE).
 Unless a software subtree contains an explicit, separate license notice,
 submitting a contribution means you agree to license that contribution under
@@ -94,8 +95,8 @@ review, revert, and publish safely.
 Include:
 
 1. the problem being solved;
-2. whether the change is an upstream fact, Asgard policy, optional design, or
-   validation requirement;
+2. whether the change is an upstream fact, Pantheon Blueprint policy, optional
+   design, or validation requirement;
 3. the affected trust boundary and data flow;
 4. official upstream references;
 5. security and privacy implications;
@@ -155,7 +156,8 @@ Tests should cover the smallest relevant set of:
 - public documentation contains no deployment-specific values.
 
 Use synthetic users, fixtures, domains, identities, and data in all published
-test evidence.
+test evidence. Record maturity and evidence using the structure in
+[Readiness and assurance](docs/assurance.md).
 
 ## Documentation style
 
@@ -206,7 +208,7 @@ git diff --check
 ```
 
 Use the actual tools selected by the repository; these names are illustrative,
-not commands supplied by Asgard.
+not commands supplied by Pantheon Blueprint.
 
 ## Security reports
 

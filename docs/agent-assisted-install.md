@@ -1,7 +1,7 @@
 # Agent-assisted installation
 
 This guide is an operating protocol for a ChatGPT, Claude, Codex, or other
-coding agent helping a human deploy Asgard.
+coding agent helping a human deploy Pantheon Blueprint.
 
 It is intentionally tool-agnostic. The agent may use a shell, browser,
 repository connector, deployment controller, or infrastructure API only when
@@ -15,6 +15,7 @@ Read these documents first:
 - [Security](security.md)
 - [Getting started](getting-started.md)
 - [Integration contracts](integration-contracts.md)
+- [Readiness and assurance](assurance.md)
 
 If a linked document does not exist in the checked-out version, report that gap
 and continue only with the controls that can be verified.
@@ -55,7 +56,7 @@ agent is a temporary operator with bounded authority.
 
 When already authorized to work on the installation, the agent may:
 
-- read public Asgard documentation;
+- read public Pantheon Blueprint documentation;
 - inspect the local public repository and its clean status;
 - perform read-only infrastructure discovery within the named scope;
 - compare installed versions with pinned configuration;
@@ -119,8 +120,8 @@ Keep public and private material physically and logically separate:
 
 ```text
 workspace/
-├── asgard/                  # public repository; placeholders only
-└── asgard-private/          # private deployment overlay
+├── pantheon/                 # public repository; placeholders only
+└── pantheon-private/         # private deployment overlay
     ├── inventory/
     ├── environments/
     ├── deployment/
@@ -286,7 +287,7 @@ installation into one change.
 
 ### Phase 0: agree on scope
 
-1. Read all Asgard documentation.
+1. Read all Pantheon Blueprint documentation.
 2. Inventory existing infrastructure using read-only operations.
 3. Record unknowns and conflicts.
 4. Agree on product versions, host placement, trust assumptions, and initial
@@ -313,7 +314,8 @@ installation into one change.
 4. Keep administrative APIs private.
 5. Register hosts with Komodo only through its documented administrative path.
 
-**Gate:** Private health tests pass. No Asgard service has public ingress.
+**Gate:** Private health tests pass. No Pantheon Blueprint service has public
+ingress.
 
 ### Phase 3: deploy Mimir
 
@@ -416,7 +418,8 @@ Good change boundaries:
 - add Muninn's manual run;
 - enable the hourly schedule after manual validation.
 
-Avoid changes such as “deploy all Asgard services” or “fix security.”
+Avoid changes such as “deploy all Pantheon Blueprint services” or “fix
+security.”
 
 For every change:
 
@@ -461,30 +464,11 @@ read-only status check.
 
 ## Acceptance-test evidence
 
-Each capability needs an evidence record in the private repository:
-
-```yaml
-test_id: opaque-test-id
-capability: human-readable-name
-environment: private-environment-name
-started_at: timestamp
-completed_at: timestamp
-deployed_versions:
-  component: pinned-version-or-digest
-preconditions:
-  - redacted-precondition
-steps:
-  - redacted-step
-expected:
-  - expected-result
-observed:
-  - redacted-observation
-result: pass | fail | blocked
-artifacts:
-  - redacted-log-or-screenshot-reference
-rollback_tested: true | false | not-applicable
-reviewed_by: human-identity-reference
-```
+Use the shared maturity labels, G0–G11 gate matrix, and evidence-record
+definition in [Readiness and assurance](assurance.md). Store one redacted
+evidence record per tested capability in the private repository, and link each
+phase gate to the records that support it. A phase is not `Verified` merely
+because its change was merged, released, or deployed.
 
 Evidence must not contain secrets or raw private content. Prefer:
 
@@ -590,7 +574,7 @@ paste a username, organization, repository URL, or real filesystem path into
 the prompt.
 
 ```text
-You are helping me deploy the Asgard reference architecture.
+You are helping me deploy the Pantheon Blueprint reference architecture.
 
 Public documentation repository:
 <PUBLIC_REPOSITORY_URL>

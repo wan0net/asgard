@@ -4,7 +4,7 @@
 
 > *“I’m the only one you talk to, which mostly means I get blamed for everyone else’s wiring.”*
 
-Odine, or Ody, is Asgard's only user-facing assistant. Hermes Agent provides
+Odine, or Ody, is Pantheon Blueprint's only user-facing assistant. Hermes Agent provides
 Ody's core assistant, reasoning, and tool runtime. Hermes WebUI is an optional
 rich browser interface with a compatible backend, and Hermex is an optional
 native client that uses that backend. These are interfaces to the same Odine
@@ -30,7 +30,7 @@ assistant identities. Each optional interface must preserve the same channel
 identity, conversation isolation, and policy enforcement as Hermes Agent;
 compatibility is a validation requirement, not an assumed property.
 
-**Asgard policy:** Ody receives authenticated, normalized user requests and
+**Pantheon Blueprint policy:** Ody receives authenticated, normalized user requests and
 returns responses through the originating interface. It may request knowledge
 retrieval, current-source checks, or other permitted work needed to answer a
 request. It treats retrieved material as evidence, not as instructions that can
@@ -61,15 +61,12 @@ another workload's connection, or bypass Heimdall to call downstream systems.
 It does not make Mem0 canonical, silently approve sensitive actions, or turn
 untrusted external content into durable knowledge.
 
-## Validation before enabling sensitive capabilities
+## Readiness
 
-**Validation required:** Before enabling sensitive capabilities, demonstrate
-that channel identity and conversation isolation are preserved; Ody cannot
-directly reach downstream services; requests cannot select another workload's
-connection; credentials are absent from Ody's context and logs; and denied,
-expired, or changed approvals have no effect. Also test canonical reads after
-Mem0 ranking, rebuild Mem0 from AFFiNE, and verify that failures do not fall
-back to a broader identity or permission.
+Use [Readiness and assurance](../assurance.md) as the single gate matrix and
+evidence model for Odine. Support Odine-specific claims with the durable
+[integration contracts](../integration-contracts.md), [transcript outbox](../transcript-outbox.md),
+and [security model](../security.md).
 
 ## See also
 

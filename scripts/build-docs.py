@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build or preview the complete Asgard documentation set."""
+"""Build or preview the complete Pantheon Blueprint documentation set."""
 
 from __future__ import annotations
 
@@ -48,14 +48,14 @@ def write_overlay(destination: Path, source_dir: Path, site_dir: Path) -> Path:
 
 def run_mkdocs(command: str, site_dir: Path | None) -> int:
     """Stage sources and invoke MkDocs with strict validation."""
-    with tempfile.TemporaryDirectory(prefix="asgard-docs-stage-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="pantheon-docs-stage-") as temporary:
         work_dir = Path(temporary)
         source_dir = work_dir / "source"
         source_dir.mkdir()
         stage_sources(source_dir)
 
         if site_dir is None:
-            site_dir = Path(tempfile.mkdtemp(prefix="asgard-docs-site-"))
+            site_dir = Path(tempfile.mkdtemp(prefix="pantheon-docs-site-"))
         else:
             site_dir = site_dir.expanduser().resolve()
 
