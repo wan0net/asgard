@@ -41,15 +41,6 @@ This is the primary map; see [Tools, capabilities, and interaction boundaries](d
 | [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted fetch/browser workers |
 | [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + Asgard policy/adapters + 1Password + Grafana Alloy/Cloud |
 
-Heimdall is a logical security boundary rather than a single product:
-
-- **Executor.sh** is the target enforcement point for tool discovery and
-  invocation.
-- **1Password** is the secret-provisioning boundary. Agents should not receive
-  vault credentials or raw connector secrets.
-- **Grafana Cloud** provides redacted operational observability. It is not an
-  authorization engine, policy decision point, or authoritative action audit.
-
 ## Architecture at a glance
 
 ```mermaid
