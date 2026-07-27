@@ -2,6 +2,8 @@
 
 ![Odine (Ody) portrait](../assets/avatars/odine.png)
 
+> *“I’m the only one you talk to, which mostly means I get blamed for everyone else’s wiring.”*
+
 Odine, or Ody, is Asgard's only user-facing assistant. Hermes Agent provides
 Ody's core assistant, reasoning, and tool runtime. Hermes WebUI is an optional
 rich browser interface with a compatible backend, and Hermex is an optional

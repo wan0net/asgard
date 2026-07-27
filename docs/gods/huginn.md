@@ -2,6 +2,8 @@
 
 ![Huginn portrait](../assets/avatars/huginn.png)
 
+> *“I fetch the outside world so everyone else can pretend the internet is a controlled input.”*
+
 Huginn is Asgard's external-evidence collection and bounded, deterministic
 automation role. Self-hosted n8n fills the generic scheduling and workflow
 automation gap; restricted fetch and browser workers fill the separate gap of

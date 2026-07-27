@@ -2,6 +2,8 @@
 
 ![Mimir portrait](../assets/avatars/mimir.png)
 
+> *“I remember everything—except why we thought naming the index after memory would prevent cache invalidation.”*
+
 Mimir is Asgard's architectural knowledge role, not a chatbot or single
 product. It closes two distinct gaps: AFFiNE keeps accepted durable knowledge
 human-readable as the canonical record, while Mem0 provides semantic retrieval

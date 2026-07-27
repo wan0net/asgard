@@ -2,6 +2,8 @@
 
 ![Heimdall portrait](../assets/avatars/heimdall.png)
 
+> *“I guard every gateway, because apparently ‘please don’t’ was not a sufficient security model.”*
+
 Heimdall is Asgard's logical security boundary and tool choke point, not a
 single product. Executor is the target enforcement point for agent tool
 discovery and invocation. It must be paired with the controls Executor does

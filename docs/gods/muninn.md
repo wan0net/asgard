@@ -2,6 +2,8 @@
 
 ![Muninn portrait](../assets/avatars/muninn.png)
 
+> *“I turn yesterday’s confident conversation into today’s carefully qualified draft.”*
+
 Muninn fills the non-interactive gap between completed conversations and
 durable knowledge curation. It is Asgard's isolated, scheduled Hermes Agent
 worker: it receives ordered, minimized windows through the Hermes-to-Muninn
