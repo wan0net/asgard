@@ -1,0 +1,44 @@
+site_name: Asgard
+site_description: Reference architecture for a self-hosted personal AI
+site_url: https://wan0net.github.io/asgard/
+repo_url: https://github.com/wan0net/asgard
+repo_name: wan0net/asgard
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Home: README.md
+  - Start here:
+      - Getting started: docs/getting-started.md
+      - Agent-assisted installation: docs/agent-assisted-install.md
+  - Design:
+      - Architecture: docs/architecture.md
+      - Tools and boundaries: docs/tooling.md
+      - Data flows: docs/data-flows.md
+      - Integration contracts: docs/integration-contracts.md
+      - Security model: docs/security.md
+      - Operations: docs/operations.md
+  - Project:
+      - Publishing: docs/publishing.md
+      - Contributing: CONTRIBUTING.md
+      - Security policy: SECURITY.md
+      - License: LICENSE.md

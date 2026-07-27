@@ -126,6 +126,7 @@ canonical knowledge.
 ## Documentation
 
 - [Architecture](docs/architecture.md)
+- [Tools, capabilities, and interaction boundaries](docs/tooling.md)
 - [Getting started](docs/getting-started.md)
 - [Data flows](docs/data-flows.md)
 - [Integration contracts](docs/integration-contracts.md) — custom wiring,
@@ -133,6 +134,7 @@ canonical knowledge.
 - [Security model](docs/security.md)
 - [Operations](docs/operations.md)
 - [Agent-assisted installation](docs/agent-assisted-install.md)
+- [Publishing the documentation](docs/publishing.md)
 - [Contributing](CONTRIBUTING.md)
 - [Security policy](SECURITY.md)
 
