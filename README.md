@@ -29,6 +29,12 @@
     workflow has been verified. Deployments should record their own evidence,
     exceptions, and validation results separately.
 
+    Production deployments use a private desired-state repository managed and
+    applied by Komodo. This public repository contains architecture, sanitized
+    examples, and human and agent setup guidance only; it is not a live
+    deployment source. Reconcile production drift in the private desired-state
+    repository, not by editing configuration in the Komodo interface.
+
 ## Roles
 
 This is the primary map; see [Tools, capabilities, and interaction boundaries](docs/tooling.md) for full product boundaries and interactions.
