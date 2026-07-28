@@ -13,12 +13,14 @@ the public repository.
 ## Operating principles
 
 1. Git records desired state; running containers are not the source of truth.
-2. The public Pantheon Blueprint repository supplies reference documentation
-   and reusable, secret-free templates.
-3. A private overlay repository records the deployment's inventory, version
-   pins, service configuration, and secret references.
-4. Komodo applies reviewed desired state; it should not become an undocumented
-   second configuration store.
+2. The public Pantheon Blueprint repository supplies architecture, sanitized
+   examples, and human and agent setup guidance only; it is not a live
+   deployment source.
+3. A private desired-state repository records the production deployment's
+   inventory, version pins, service configuration, and secret references.
+4. Komodo applies the reviewed private desired state. Reconcile production
+   drift in that repository, not by editing configuration in the Komodo
+   interface.
 5. Every stateful change has a pre-change backup and a tested rollback path.
 6. Backups are append-oriented and recoverable without the live application.
 7. Backup creation credentials cannot delete prior backups.
@@ -36,9 +38,9 @@ the public repository.
 The public repository should contain:
 
 - architecture, security, data-flow, installation, and operations documents;
-- generic Compose and service templates when they are stable enough to share;
+- sanitized Compose and service examples when they are stable enough to share;
 - placeholder environment files containing no real values;
-- validation procedures;
+- human and agent setup and validation guidance;
 - example policies; and
 - contribution and disclosure guidance.
 
@@ -53,10 +55,10 @@ It must not contain:
 - logs, database samples, conversation content, or tool arguments from the
   private deployment.
 
-### Private overlay repository
+### Private desired-state repository
 
-The private overlay is the desired-state authority for one deployment. It
-should contain:
+The private repository managed by Komodo is the desired-state authority for
+one production deployment. It should contain:
 
 ```text
 inventory/
@@ -91,13 +93,12 @@ repository is not a secret manager.
 
 ### Prevent configuration drift
 
-Choose and document one of these operating modes:
-
-- **Git-only:** Komodo stacks are created from the private repository and
-  production edits in the Komodo interface are prohibited.
-- **Controlled emergency edit:** an operator may change a running stack during
-  an incident, but must immediately export the change, review it, commit it to
-  the private repository, and reconcile production from Git.
+Komodo stacks are created from the private desired-state repository. Review and
+commit every production configuration change there, then use Komodo to apply
+that state. Do not edit production configuration in the Komodo interface or
+treat its recorded stack definition as an alternate configuration authority.
+If production differs from the reviewed state, investigate the difference and
+reconcile it through a reviewed change in the private repository.
 
 At least nightly, compare:
 
@@ -463,7 +464,7 @@ failure and administrative domain.
 | ---: | --- | --- |
 | 1 | AFFiNE | Database, blob/upload storage, release/config metadata, consistency manifest |
 | 2 | Hermes/Ody | Conversation/session state, approved memory/state, skills, profile configuration, identity references |
-| 3 | Private overlay | Git history, version pins, non-secret configuration, policies, recovery notes |
+| 3 | Private desired state | Git history, version pins, non-secret configuration, policies, recovery notes |
 | 4 | Heimdall | Tool catalogue, policy, connector-to-identity mapping, approval/audit data not held elsewhere |
 | 5 | n8n/Huginn | Database, workflow definitions, encryption key reference, capture manifests, binary data if retained |
 | 6 | Muninn | Checkpoints, candidate ledger, provenance, schedules, profile configuration |
