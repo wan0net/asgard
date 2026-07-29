@@ -168,6 +168,7 @@ canonical knowledge.
   [data flows](docs/data-flows.md), and [roles](docs/tooling.md).
 - **Deploy:** [getting started](docs/getting-started.md),
   [integration contracts](docs/integration-contracts.md),
+  [scoped maintenance](docs/maintenance-sessions.md),
   [operations](docs/operations.md), and [backups](docs/backups.md).
 - **Assure:** [assurance](docs/assurance.md) and [security](docs/security.md).
 
