@@ -47,6 +47,7 @@ Pantheon Blueprint adapter.
 | Conversation completion and Muninn checkpoints | Hermes session persistence, API, and export | Upstream-supported export + custom completion/checkpoint adapter | Manual runs first |
 | Huginn capture handoff | n8n workflows, webhooks, and task nodes | Custom workflow contract | One unauthenticated read-only source first |
 | Durable approval and channel resume | Executor policy substrate + Hermes delivery surfaces | Custom service; blocked pending end-to-end validation | High-risk tools off |
+| Scoped maintenance session | Durable approval, Git forge, CI, and deployment substrates | Custom control service; blocked pending end-to-end validation | Off; diagnosis remains read-only |
 | Ody update broker | Hermes update surface and deployment controller | Custom privileged broker | Off until rollback test passes |
 | Audit record sink | Product logs and Grafana-compatible telemetry | Custom security record path | Local append first; remote redacted copy |
 
@@ -624,6 +625,12 @@ Upstream basis:
 Hermes and the deployment platform may each provide update operations. Pantheon
 Blueprint requires a narrow broker that converts an owner request into a
 pinned, reviewable, recoverable stack update.
+
+Assistant-led source changes also require the separate immutable and expiring
+authority contract in [Scoped maintenance sessions](maintenance-sessions.md).
+Session activation may permit bounded branch and test work, but it does not
+authorize merge, deployment, secret access, or networking changes. No upstream
+component is assumed to provide this complete contract.
 
 **Classification:** Pantheon Blueprint custom privileged adapter.
 

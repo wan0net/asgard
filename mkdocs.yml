@@ -64,6 +64,7 @@ nav:
       - Getting started: docs/getting-started.md
       - Agent-assisted installation: docs/agent-assisted-install.md
       - Integration contracts: docs/integration-contracts.md
+      - Scoped maintenance sessions: docs/maintenance-sessions.md
       - Transcript outbox: docs/transcript-outbox.md
       - Operations: docs/operations.md
       - Backups and restore: docs/backups.md

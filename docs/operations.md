@@ -30,6 +30,9 @@ the public repository.
    authoritative action audit.
 10. A self-healing claim is valid only for a named failure, version set, and
     successful test.
+11. Assistant-led bug fixes require an explicit, scoped, expiring
+    [maintenance session](maintenance-sessions.md); diagnosis alone grants no
+    mutation authority.
 
 ## Desired-state ownership
 
@@ -368,6 +371,12 @@ contain semantic actions such as:
 Each action accepts bounded identifiers, not arbitrary commands. The
 deployment identity verifies that the approved commit, version, digest, and
 target match before asking Komodo to deploy.
+
+Updates and bug fixes are related but distinct. A bug fix may prepare a branch,
+tests, and pull request only inside an owner-approved maintenance session.
+Merge and deployment remain separate one-use approvals bound to reviewed
+commits, pinned artifacts, health checks, and rollback evidence. See [Scoped
+maintenance sessions](maintenance-sessions.md).
 
 ### Promotion gates
 

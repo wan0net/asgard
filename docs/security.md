@@ -534,6 +534,14 @@ Controls:
 The broker must not accept arbitrary shell text, image names, Compose paths, or
 Komodo resources from the model.
 
+Bug-fix work needs a separate, explicit authority boundary. Normal diagnostic
+access must not silently become permission to edit, merge, deploy, retrieve
+secrets, or change networking. Use the immutable, expiring session and
+separately approved action model in [Scoped maintenance
+sessions](maintenance-sessions.md). This is Pantheon Blueprint policy and must
+be implemented and validated outside model memory; it is not a capability
+assumed of Hermes or Executor.
+
 ## Docker, Traefik, and Komodo
 
 ### Docker daemon
