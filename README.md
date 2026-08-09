@@ -4,16 +4,10 @@
   <h1 class="pantheon-title">Pantheon Blueprint</h1>
   <p class="pantheon-subtitle">An Open reference Architecture for Intelligent Agent Systems</p>
   <p class="pantheon-intro">
-    The Norse gods understood that wisdom needed many hands. Odin pursued
-    knowledge, Mimir guarded memory, Huginn and Muninn ranged far and wide to
-    bring back thought and insight, and Heimdall defended the gateways to the
-    realm. Each had a role, and together they formed a system greater than any
-    one part. Pantheon Blueprint translates that pattern to modern AI agent
-    systems, describing an ecosystem where specialised agents and the services
-    that support them—memory, automation, identity, observability—all collaborate
-    through clear interfaces rather than one monolithic brain. No deities were
-    consulted or harmed in the making of this architecture, just a collection
-    of services and some lively design discussions.
+    One assistant for the owner, with knowledge, collection, review, and tool
+    execution separated behind clear boundaries. Pantheon Blueprint shows how
+    information moves, where authority lives, and when work must pause for
+    human approval.
   </p>
   <div class="pantheon-actions">
     <a class="pantheon-button pantheon-button--primary" href="docs/architecture/">Explore the architecture</a>
@@ -47,6 +41,14 @@ This is the primary map; see [Tools, capabilities, and interaction boundaries](d
 | [![Huginn avatar](docs/assets/avatars/huginn.png)](docs/gods/huginn.md) | [Huginn](docs/gods/huginn.md) | Collects external evidence and runs bounded, deterministic automations. | n8n + restricted fetch/browser workers |
 | [![Heimdall avatar](docs/assets/avatars/heimdall.png)](docs/gods/heimdall.md) | [Heimdall](docs/gods/heimdall.md) | Mediates tool actions, applies policy, selects scoped connections, and records evidence. | Executor + Pantheon Blueprint policy/adapters + 1Password + Grafana Alloy/Cloud |
 
+Three rules explain most of the design:
+
+1. **Ody is the only assistant the owner talks to.**
+2. **AFFiNE is accepted knowledge; Mem0 and captured evidence are supporting
+   data.**
+3. **Heimdall checks actions, and sensitive changes pause for an exact human
+   approval.**
+
 ## How one request moves
 
 ```mermaid
@@ -54,6 +56,7 @@ sequenceDiagram
     participant UI as "User interface"
     participant Ody as "Odine / Hermes"
     participant Gate as "Heimdall / Executor"
+    participant Approval as "Human approval"
     participant Secrets as "1Password"
     participant Mem as "Mem0"
     participant Knowledge as "Canonical AFFiNE"
@@ -62,6 +65,10 @@ sequenceDiagram
     UI->>Ody: "User request"
     Ody->>Gate: "Tool request"
     Gate->>Gate: "Apply policy and scoped identity"
+    opt Sensitive action
+        Gate->>Approval: "Pause with exact action and expiry"
+        Approval-->>Gate: "Approve or deny"
+    end
     Note over Secrets,Gate: 1Password provisions approved runtime secrets before requests
     Gate->>Mem: "Reference search"
     Mem-->>Gate: "References"
@@ -165,7 +172,8 @@ canonical knowledge.
 ## Choose your path
 
 - **Understand:** [architecture](docs/architecture.md),
-  [data flows](docs/data-flows.md), and [roles](docs/tooling.md).
+  [data flows](docs/data-flows.md), [approvals](docs/approvals.md), and
+  [roles](docs/tooling.md).
 - **Deploy:** [getting started](docs/getting-started.md),
   [integration contracts](docs/integration-contracts.md),
   [scoped maintenance](docs/maintenance-sessions.md),
