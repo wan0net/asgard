@@ -1,458 +1,205 @@
 # Architecture
 
-Pantheon Blueprint is a reference architecture for a personal AI assistant that
-presents one consistent identity to its owner while keeping knowledge,
-automation, and tool execution behind explicit trust boundaries.
+Pantheon Blueprint is a reference design for one personal AI assistant with
+separate knowledge, collection, review, and tool-execution boundaries.
 
-This document describes the intended design. It is not a claim that every
-control is enforced by every upstream product release. Use the maturity
-definitions and gate matrix in [Readiness and assurance](assurance.md) before
-granting the system access to sensitive data or destructive tools.
+The short version is:
 
-## Design goals
+1. **Ody talks to the owner.** The internal roles do not become separate
+   assistants the owner has to coordinate.
+2. **AFFiNE holds accepted knowledge.** Search indexes, transcripts, captures,
+   and telemetry are supporting data, not sources of truth.
+3. **Heimdall controls actions.** Agents ask for capabilities; they do not hold
+   general credentials or choose arbitrary downstream accounts.
+4. **Sensitive changes pause for approval.** Approval is bound to one exact,
+   expiring action. Merge and deployment are separate decisions.
 
-- Present one user-facing assistant across web, mobile, messaging, and knowledge
-  interfaces.
-- Keep durable knowledge in a human-readable source of truth.
-- Make semantic indexes disposable and rebuildable.
-- Preserve the identity of the requesting agent when a shared gateway calls a
-  downstream service.
-- Prevent agents and untrusted content collectors from obtaining raw
-  credentials.
-- Route tool discovery and invocation through one policy and audit point.
-- Separate internet-facing collection from trusted knowledge storage.
-- Keep deployment practical on three Docker hosts.
-- Prefer pinned, reviewable releases and recoverable operations.
-- Make security claims only after a corresponding test has passed.
+This page describes **Pantheon Blueprint policy**, not proof that a deployment
+implements it. Use [Readiness and assurance](assurance.md) to distinguish a
+reference design from implemented and verified behavior.
 
-## Names, roles, and products
+## The five roles
 
-The Norse names identify stable architectural roles. Products are replaceable
-implementations of those roles.
+The role names are stable responsibilities. The products are replaceable.
 
-See [Tools, capabilities, and interaction boundaries](tooling.md) for the
-complete capability-to-product map and the remote, administrative, and internal
-tool request paths.
-
-| Role | Responsibility | Initial implementation |
+| Role | Plain-language responsibility | Reference implementation |
 | --- | --- | --- |
-| **Odine (Ody)** | Sole user-facing assistant, conversation, reasoning, and orchestration | Hermes Agent, Hermes WebUI, Hermex, and a Signal transport |
-| **Mimir** | Canonical knowledge and retrieval | AFFiNE as the source of truth; Mem0 as a rebuildable semantic index |
-| **Muninn** | Review completed conversations, reconcile them with existing knowledge, and prepare curated updates | Scheduled, non-interactive Hermes workers using an isolated profile |
-| **Huginn** | Collect external material, monitor sources, deduplicate captures, and hand evidence inward | n8n workflows and restricted browser/fetch tools |
-| **Heimdall** | Mediate tool discovery and invocation, select downstream identities, request approval, and record actions | Executor as the tool gateway |
+| **Odine (Ody)** | Talks with the owner, reasons about requests, and coordinates work | Hermes Agent with WebUI, Hermex, or a messaging channel |
+| **Mimir** | Keeps accepted knowledge and makes it searchable | AFFiNE as the source of truth; Mem0 as a rebuildable index |
+| **Muninn** | Reviews completed conversations and prepares traceable knowledge drafts | Isolated scheduled Hermes worker |
+| **Huginn** | Collects external evidence and runs predictable workflows | n8n with restricted fetch or browser workers |
+| **Heimdall** | Checks identity and policy, selects a scoped connection, pauses for approval when needed, and records actions | Executor plus Blueprint policy and adapters |
 
-Three supporting systems are deliberately not treated as agents:
+Supporting services are not agents:
 
-- **1Password** is the source and provisioning boundary for secrets. Agents
-  should not receive a general-purpose 1Password tool or browse vaults.
-- **Grafana Cloud** receives observability data. It does not authorize actions
-  and must not be described as part of the enforcement path.
-- **Komodo** manages deployments. It may run outside these three hosts and is
-  not part of the assistant's runtime decision path.
+- **1Password** provisions secrets to approved runtimes. It is not a tool for
+  browsing secrets.
+- **Grafana** receives redacted operational telemetry. It cannot approve work.
+- **Komodo** applies reviewed deployment state. It is outside the assistant's
+  normal runtime decision path.
 
-AFFiNE can also be a user interface for Ody. Its AI editing integration can send
-requests to the Hermes-compatible proxy, subject to the same user and tool
-policy as other Ody interfaces. This path must be tested for identity,
-conversation isolation, and recursive AFFiNE writes before tools are enabled.
+See [Tools and platform](tooling.md) for the detailed capability-to-product
+map.
 
-## Reference deployment
-
-The reference deployment uses three Docker hosts. A host is a trust boundary
-and failure-containment unit, not a requirement that every component has its
-own virtual machine.
-
-| Host | Trust zone | Typical services |
-| --- | --- | --- |
-| `agent-01` | Assistant runtime | Hermes Agent, Hermes WebUI, Hermes proxy/API, messaging gateway, Signal bridge, Muninn schedules |
-| `knowledge-01` | Trusted knowledge | AFFiNE, AFFiNE data services, Mem0, vector/database services, controlled indexing worker |
-| `tools-01` | Tool execution and untrusted collection | Executor, n8n, browser workers, connector processes, approval adapter |
-
-Example public names should use a domain you control, such as:
-
-```text
-chat.ody.pantheon.example.com
-admin.ody.pantheon.example.com
-mimir.pantheon.example.com
-mem0.mimir.pantheon.example.com
-heimdall.pantheon.example.com
-huginn.pantheon.example.com
-```
-
-The exact names are configuration. Internal APIs should normally have private
-DNS records or resolve only over Tailscale. Do not publish a service merely
-because it has a DNS name.
-
-## Deployment and trust boundaries
-
-```mermaid
-flowchart TB
-    User["Owner"]
-    External["External services and untrusted content"]
-    GF["Grafana Cloud<br/>observability only"]
-    OP["1Password<br/>secret source and provisioning"]
-    Pangolin["Pangolin<br/>authenticated remote ingress"]
-    Tail["Tailscale<br/>private transport and host ACLs"]
-
-    subgraph Agent["agent-01 — assistant runtime"]
-        TraefikA["Traefik"]
-        Ody["Odine / Hermes<br/>WebUI · Hermex backend · Signal"]
-        Muninn["Muninn<br/>scheduled Hermes workers"]
-    end
-
-    subgraph Knowledge["knowledge-01 — trusted knowledge"]
-        TraefikK["Traefik"]
-        Affine["AFFiNE<br/>canonical source"]
-        Mem0["Mem0<br/>rebuildable index"]
-        Indexer["Controlled indexer"]
-    end
-
-    subgraph Tools["tools-01 — execution and collection"]
-        TraefikT["Traefik"]
-        Executor["Heimdall / Executor<br/>gateway · policy · identity · audit"]
-        Huginn["Huginn / n8n"]
-        Workers["Restricted tool and browser workers"]
-    end
-
-    User --> Pangolin
-    User --> Tail
-    Pangolin --> TraefikA
-    Pangolin --> TraefikK
-    Tail --> TraefikA
-    Tail --> TraefikK
-    Tail --> TraefikT
-
-    TraefikA --> Ody
-    TraefikK --> Affine
-    TraefikT --> Executor
-    TraefikT --> Huginn
-
-    Ody -->|"tool request"| Executor
-    Muninn -->|"tool request"| Executor
-    Huginn -->|"tool request"| Executor
-    Executor -->|"scoped connector identity"| Affine
-    Executor -->|"scoped search/index call"| Mem0
-    Executor --> Workers
-    Workers --> External
-    Huginn -->|"capture through controlled interface"| Executor
-    Affine --> Indexer
-    Indexer --> Mem0
-
-    OP -.->|"inject at deployment/startup"| Ody
-    OP -.->|"inject at deployment/startup"| Executor
-    OP -.->|"inject at deployment/startup"| Huginn
-    Ody -.->|"logs, metrics, traces"| GF
-    Executor -.->|"redacted audit telemetry"| GF
-    Huginn -.->|"logs, metrics, traces"| GF
-```
-
-The dashed lines are supporting flows, not ordinary agent tool calls.
-
-## Access planes
-
-### Traefik
-
-Use the existing per-host Traefik pattern to terminate TLS and route only to
-explicitly labelled containers. Avoid exposing a Docker socket over the network;
-if Traefik needs Docker discovery, constrain its local socket access with an
-appropriate proxy.
-
-### Pangolin
-
-Use Pangolin for authenticated, human-facing remote access such as the Ody chat
-interface, the AFFiNE interface, and an approval page. Exposing administrative
-interfaces through Pangolin should be an explicit choice, not the default.
-
-### Tailscale
-
-Use Tailscale for host-to-host traffic, private APIs, administration, and
-recovery access. Host ACLs reduce reachable paths, but they do not identify
-individual containers. Heimdall therefore still needs application-level caller
-authentication.
-
-### Suggested exposure
-
-| Surface | Default exposure |
-| --- | --- |
-| Ody chat/WebUI | Pangolin and/or Tailscale |
-| AFFiNE UI | Pangolin and/or Tailscale |
-| Hermes administration | Tailscale only |
-| Executor API | Tailscale/private network only |
-| Mem0 API | Private network only; preferably reachable only through Heimdall and the indexer |
-| Muninn worker endpoints | Private network only, or no listening socket |
-| n8n editor | Tailscale only |
-| Selected inbound webhooks | Narrow Pangolin routes with independent authentication |
-| Databases and container engines | Never exposed through Pangolin |
-
-## Heimdall as the tool choke point
-
-The intended rule is:
-
-> Agents may reason and request actions. Heimdall is the only general path for
-> discovering and invoking tools.
-
-This is enforceable only when the network and runtime also prevent bypass:
-
-1. Agent containers receive no downstream API, database, or OAuth credentials.
-2. Agent egress is denied by default except to approved inference endpoints,
-   Heimdall, and narrowly defined runtime dependencies.
-3. Tools not authorized for a caller are omitted from discovery as well as
-   denied at invocation.
-4. Arguments, target resources, data classification, and approval state are
-   evaluated before execution.
-5. Each request is correlated with its user, interface, conversation, agent,
-   workflow, and parent task.
-6. Results are classified and filtered before being returned.
-7. Audit events are tamper-evident and redact secrets and sensitive content.
-
-Do not describe Executor alone as a complete sandbox. A connector or browser
-worker with host mounts, a container-engine socket, or unrestricted network
-access can escape the intended policy boundary. High-risk or user-supplied
-executables should run in disposable, strongly isolated workers; a container is
-not always a sufficient boundary.
-
-Hermes may require narrow local capabilities for skill creation and its own
-managed update process. Treat these as documented exceptions, scoped to
-dedicated directories and commands, rather than as general shell or filesystem
-access. Until that isolation is verified, the statement “all tools go through
-Heimdall” remains a design goal rather than a completed control.
-
-## Caller and downstream identity
-
-A shared gateway must not make every AFFiNE edit appear to come from Heimdall.
-Each calling role has its own workload identity, and Heimdall maps that identity
-to a distinct downstream connector profile.
-
-```mermaid
-sequenceDiagram
-    participant A as Agent or workflow
-    participant H as Heimdall / Executor
-    participant P as Policy and approval
-    participant S as Downstream service
-
-    A->>H: Authenticated request + task context
-    H->>H: Derive caller identity from transport credential
-    H->>P: Evaluate caller, tool, arguments, and target
-    alt Approval required
-        P-->>H: Pending approval
-        H-->>A: Structured approval request
-        P-->>H: Approved or denied
-    end
-    H->>H: Select connector profile for caller
-    H->>S: Invoke using caller-specific downstream account
-    S-->>H: Result and downstream audit identity
-    H-->>A: Filtered result + request ID
-```
-
-For example, Ody, Muninn, and Huginn may each have a distinct AFFiNE account.
-Heimdall should select the corresponding MCP configuration or credential set
-from the authenticated caller identity. It must not trust an email address,
-agent name, or connector profile supplied only in model-generated arguments.
-
-Architecture checks before enabling writes:
-
-- Executor can maintain separate connector sessions or MCP configurations per
-  caller.
-- A request cannot select another caller's connector profile.
-- AFFiNE's audit/history view records the intended downstream account.
-- Session refresh and OAuth renewal do not collapse identities into one account.
-- Revoking one agent account does not break or authorize another.
-
-If the installed versions cannot meet these tests, use separate gateway
-instances or connector processes per agent until a safe multiplexing mechanism
-is available.
-
-## Mimir authority model
-
-AFFiNE is the canonical, human-editable record. Mem0 improves retrieval but has
-no independent authority to overwrite AFFiNE.
+## The system at a glance
 
 ```mermaid
 flowchart LR
-    Sources["Conversations and approved sources"]
-    Candidate["Muninn candidate and provenance"]
-    Inbox["AFFiNE review inbox"]
-    Canon["AFFiNE canonical page"]
-    Indexer["Deterministic indexer"]
-    Search["Mem0 semantic index"]
-    Ody["Ody retrieval"]
+    Owner["Owner"] -->|"request"| Ody["Ody<br/>one assistant"]
 
-    Sources --> Candidate
-    Candidate --> Inbox
-    Inbox -->|"accept or policy-approved promotion"| Canon
-    Canon --> Indexer
-    Indexer -->|"replace page revision chunks"| Search
-    Search -->|"references and relevance"| Ody
-    Ody -->|"fetch canonical content"| Canon
+    subgraph Assistant["Assistant boundary"]
+        Ody
+        Muninn["Muninn<br/>conversation review"]
+    end
+
+    subgraph Tools["Tool and collection boundary"]
+        Heimdall["Heimdall<br/>identity, policy, approval, audit"]
+        Huginn["Huginn<br/>external collection"]
+    end
+
+    subgraph Knowledge["Knowledge boundary"]
+        Affine["AFFiNE<br/>accepted knowledge"]
+        Mem0["Mem0<br/>rebuildable search index"]
+        Affine -->|"approved revisions"| Mem0
+    end
+
+    Ody -->|"capability request"| Heimdall
+    Muninn -->|"draft or read request"| Heimdall
+    Huginn -->|"bounded action"| Heimdall
+    Heimdall -->|"scoped operation"| Affine
+    Heimdall -->|"scoped search"| Mem0
+    Heimdall -->|"approved connector"| External["External services"]
+    Huginn -->|"untrusted evidence"| Staging["Capture staging"]
+    Staging -->|"review candidate"| Muninn
 ```
 
-### Logical knowledge structure
+The important boundaries are logical. A small installation may combine roles
+on fewer machines, but it must preserve identity separation, least privilege,
+data authority, and failure isolation.
 
-Mimir uses AFFiNE as both its implementation and canonical source of truth. Its
-information architecture uses a Capacities-inspired object model implemented
-through AFFiNE conventions. Start with exactly seven primary types:
+## Where it runs
 
-- **Project**
-- **Area**
-- **Person/Organisation**
-- **Topic**
-- **Decision**
-- **Source**
-- **Procedure**
+The reference topology uses three Docker hosts:
 
-Meetings, conversations, email, and external captures begin as `Source`
-subtypes rather than becoming additional primary types.
+| Host | Trust zone | Typical contents |
+| --- | --- | --- |
+| `agent-01` | Assistant runtime | Ody and an isolated Muninn worker |
+| `knowledge-01` | Trusted knowledge | AFFiNE, Mem0, and their data services |
+| `tools-01` | Tool execution and untrusted collection | Heimdall, Huginn, connectors, and restricted workers |
 
-A PARA-like shell of AFFiNE dashboards or saved collections provides
-human-facing navigation. These views are not exclusive folders or ownership
-containers: one object can appear in several relevant views without being
-duplicated or moved.
+Traefik handles declared HTTP routes. Tailscale carries private and
+administrative traffic. Pangolin publishes only deliberately selected
+human-facing routes. DNS, reachability, authentication, application
+authorization, and tool approval remain separate controls.
 
-Canonical entity pages use the strongest part of the GBrain pattern: a concise,
-rewritable `Current understanding` or `Current state` records the currently
-accepted view with provenance, while an append-only evidence timeline preserves
-dated, source-backed observations and changes, including evidence later
-contradicted or superseded.
+```mermaid
+flowchart TB
+    Remote["Remote owner"] -->|"authenticated published route"| Published["Pangolin"]
+    Admin["Administrator"] -->|"private device identity"| Private["Tailscale"]
+    Published --> Router["Traefik"]
+    Private --> Router
+    Router --> UI["Selected user or admin interface"]
+    UI --> Ody["Ody"]
 
-LLMWiki-style behaviour is used only for research ingestion: collected Sources
-are synthesised into cited Topic pages, and existing Topic pages are reconciled
-when new evidence arrives. It does not define the organisation of the whole
-knowledge base. Detailed schemas remain in the [Mimir knowledge
-model](mimir-knowledge-model.md).
+    Ody --> Heimdall["Heimdall"]
+    Heimdall --> Knowledge["Knowledge services"]
+    Heimdall --> Connectors["Scoped connectors"]
+```
 
-Key invariants:
+A published route does not grant application access. Private network access
+does not replace login. Application login does not grant an agent permission
+to invoke a downstream tool.
 
-- When AFFiNE and Mem0 disagree, AFFiNE wins.
-- Mem0 entries carry a stable AFFiNE page ID, source revision, content hash,
-  classification, status, and indexing timestamp.
-- Retrieval from Mem0 returns references; Ody reads canonical AFFiNE content
-  before making important claims.
-- Mem0 can be deleted and rebuilt from AFFiNE and retained source archives.
-- Huginn stores raw evidence or stages candidates; it does not silently promote
-  external content into canonical pages.
-- Muninn proposes or applies only the classes of changes allowed by policy.
-- Object type and canonical status must not be inferred from navigation view
-  membership.
-- Deletion and supersession are explicit human or retention-policy decisions,
-  never an inference made solely by a model.
+## Mimir authority model
 
-## Docker network model
+Not all stored data has equal authority:
 
-Docker network names are examples. The important property is which containers
-can communicate, not the spelling.
+| Data | Authority | Rule |
+| --- | --- | --- |
+| Accepted AFFiNE pages | Canonical knowledge | Wins when another representation disagrees |
+| Mem0 records | Derived search index | May be deleted and rebuilt from AFFiNE |
+| Muninn drafts | Proposed knowledge | Requires the configured review or promotion policy |
+| Huginn captures | Untrusted evidence | Must not promote itself into accepted knowledge |
+| Conversation transcripts | Source material | Minimize, redact, and hand off through an append-only boundary |
+| Grafana telemetry | Operational observation | Must not become approval or canonical audit authority |
 
-### `agent-01`
+The knowledge path is therefore:
 
-| Network | Members and purpose |
-| --- | --- |
-| `agent_ingress` | Traefik and user-facing Hermes services |
-| `agent_runtime` | Hermes runtime, WebUI backend, messaging adapters |
-| `agent_egress` | Narrow route to Heimdall and approved inference endpoints |
-| `muninn_runtime` | Scheduled workers with their own profile and Heimdall identity |
+```mermaid
+flowchart LR
+    Source["Conversation or external source"] --> Candidate["Candidate with provenance"]
+    Candidate --> Review["Review and policy decision"]
+    Review -->|"accept"| Affine["AFFiNE canonical page"]
+    Review -->|"reject or defer"| Inbox["Review inbox"]
+    Affine --> Index["Rebuildable Mem0 index"]
+```
 
-Muninn can share the host and Hermes release with Ody without sharing its
-profile, conversation store, service identity, or connector configuration.
+## Action authority
 
-### `knowledge-01`
+Heimdall is the intended gateway for agent and workflow actions. It derives
+the caller from an authenticated workload identity, exposes only the caller's
+tool catalogue, selects the caller's fixed downstream connection, validates
+the request, and records the result.
 
-| Network | Members and purpose |
-| --- | --- |
-| `knowledge_ingress` | Traefik and AFFiNE frontend/API |
-| `affine_backend` | AFFiNE, its database, cache, and blob service |
-| `mem0_backend` | Mem0 and its vector/database service |
-| `indexing` | Controlled AFFiNE-to-Mem0 indexer |
+The caller may request a capability such as “read this page” or “open a draft
+pull request.” It must not provide a secret reference, arbitrary connector, or
+another role's identity.
 
-Do not attach Muninn or general tool workers directly to database networks.
+```text
+authenticated workload
+    -> permitted capability
+    -> fixed connection and downstream identity
+    -> policy decision
+    -> exact action or approval pause
+    -> filtered result and audit evidence
+```
 
-### `tools-01`
+Unknown identity, policy, target, approval state, or action outcome fails
+closed. Agents must not fall back to direct connectors when Heimdall is
+unavailable.
 
-| Network | Members and purpose |
-| --- | --- |
-| `heimdall_ingress` | Traefik, Executor, policy, and approval components |
-| `connector_runtime` | Executor and narrowly scoped connector processes |
-| `huginn_backend` | n8n and its database |
-| `untrusted_fetch` | Disposable browser/fetch workers with internet egress and no management-network route |
-| `capture_staging` | Minimal handoff between collection and controlled storage |
+## Approval boundaries
 
-Avoid mounting the Docker socket into agent, n8n, or browser containers. If an
-orchestrator must start disposable workers, place a constrained launcher in
-front of the container engine and allow only predefined images, mounts, limits,
-and networks.
+Most safe reads should run without interrupting the owner. Sensitive or
+high-impact changes pause for a human decision. The approval is native to the
+control path, tied to the exact request, expires, and can be used only as
+defined by policy.
 
-## Secret handling
+Preparing a change, merging it, and deploying it are three distinct steps:
 
-1Password is used to provision a minimum set of secrets into a service at
-startup or deployment time.
+```mermaid
+flowchart LR
+    Diagnose["Read-only diagnosis"] --> Prepare["Approved bounded preparation"]
+    Prepare --> PR["Draft pull request"]
+    PR --> MergeApproval{"Approve exact merge?"}
+    MergeApproval -->|"yes"| Merged["Merged desired state"]
+    MergeApproval -->|"no or expired"| Stop["Stop with no merge"]
+    Merged --> DeployApproval{"Approve exact deployment?"}
+    DeployApproval -->|"yes"| Deploy["Deploy pinned revision"]
+    DeployApproval -->|"no or expired"| MergedOnly["Merged, not deployed"]
+```
 
-- Create separate service-account scopes for the hosts or services that require
-  them.
-- Grant access to explicit vaults and items; avoid an organization-wide reader.
-- Render secrets into an in-memory or tightly permissioned runtime environment
-  where possible.
-- Do not commit rendered environment files, service-account tokens, OAuth
-  refresh tokens, or connector state.
-- Do not expose `op` as an unrestricted agent tool.
-- Rotate a secret without changing application configuration by keeping stable
-  secret references.
-- Ensure logs, process listings, deployment previews, and support bundles do
-  not reveal injected values.
+See [Approvals](approvals.md) for the simple decision table and
+[Scoped maintenance sessions](maintenance-sessions.md) for the full contract.
 
-An application compromise may still read secrets already injected into that
-application. 1Password narrows distribution and improves rotation; it does not
-make a compromised process safe.
+## Failure rules
 
-## Observability
+- A search failure does not change canonical knowledge.
+- A collection failure does not erase the last accepted capture.
+- A draft failure does not advance its checkpoint.
+- An ambiguous write is reconciled before retry.
+- A missing, altered, expired, or replayed approval invokes nothing.
+- A failed canary, backup verification, or health check blocks deployment.
+- Rollback restores a compatible release; restore replaces state from a
+  verified recovery set. They are not interchangeable.
 
-Grafana Cloud may receive:
+## Read next
 
-- service availability and resource metrics;
-- structured, redacted application logs;
-- traces correlated by non-secret request and task IDs;
-- Heimdall decisions and approval latency;
-- indexing checkpoints and drift indicators;
-- backup, update, and restore-test outcomes.
-
-Do not send raw prompts, full tool arguments, OAuth headers, document contents,
-or secret-bearing environment values by default. Retention and access policy in
-Grafana Cloud should match the sensitivity of the remaining metadata.
-
-Observability can show that a control failed. It is not the control itself.
-
-## Architecture readiness summary
-
-The architecture is ready to advance only when its trust boundaries work
-end-to-end: interfaces preserve user context, Heimdall remains the only general
-tool path, downstream actions retain caller identity, canonical knowledge can
-rebuild its semantic index, and untrusted workers cannot reach trusted
-networks or credentials. Recovery must also succeed from documented backups.
-
-[Readiness and assurance](assurance.md) owns the maturity definitions, gate
-matrix, and evidence-record format. Use the domain-specific checks in
-[Security](security.md), [Integration contracts](integration-contracts.md),
-[Transcript outbox](transcript-outbox.md), and [Backups](backups.md) to produce
-that evidence rather than treating this architecture description as proof.
-
-Product versions, APIs, OAuth behaviour, and MCP support change. Pin releases
-and re-run affected checks before promotion.
-
-## Security principles
-
-1. **One assistant, multiple internal roles.** The owner talks to Ody; internal
-   service names exist for configuration and audit.
-2. **Default deny.** Network paths, tools, identities, and data classes are
-   granted explicitly.
-3. **No credential delegation to models.** Models request capabilities; trusted
-   services hold credentials.
-4. **Canonical knowledge is human-readable.** AFFiNE remains authoritative and
-   recoverable independently of the model and index.
-5. **External content is hostile input.** Collection and browser execution live
-   outside the trusted knowledge zone.
-6. **Identity survives mediation.** Shared infrastructure does not erase which
-   agent and user caused an action.
-7. **Approval is a state machine.** Approvals are scoped, expiring, one-use, and
-   tied to the exact semantic action.
-8. **Backups are append-oriented.** Automated systems create new backup objects;
-   retention or deletion requires a separate, explicit policy.
-9. **Updates are pinned and reversible.** Automation proposes and deploys known
-   versions with health checks and rollback data.
-10. **Claims follow tests.** A diagram is not proof that a boundary exists.
+- [Data flows](data-flows.md) shows the main request, knowledge, collection,
+  approval, and deployment paths.
+- [Approvals](approvals.md) explains when the system runs, pauses, or refuses.
+- [Security](security.md) defines the threat model and negative tests.
+- [Integration contracts](integration-contracts.md) contains the detailed
+  wiring requirements.
+- [Readiness and assurance](assurance.md) explains what must be tested before a
+  deployment can call a capability verified.

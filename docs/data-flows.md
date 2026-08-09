@@ -1,691 +1,261 @@
 # Data flows
 
-This chapter describes how information and actions should move through
-Pantheon Blueprint. It owns the concrete end-to-end flow scenarios; see
-[Readiness and assurance](assurance.md) for maturity labels, the central gate
-matrix, and evidence expectations. The flows are security requirements and
-implementation targets, not evidence that a particular upstream release
-already implements them.
+This page shows how requests, knowledge, evidence, approvals, and deployments
+move through Pantheon Blueprint.
 
-The examples use generic identities and addresses. Schedules are examples and
-must be configured for the deployment's local time zone.
-
-## Flow invariants
-
-Every flow in this document preserves the following rules:
+Every flow follows the same rules:
 
 - Ody is the only user-facing assistant.
-- General tool discovery and execution pass through Heimdall.
-- Agents receive capabilities and results, never raw downstream secrets.
-- Heimdall derives the caller from an authenticated workload identity.
-- A model-generated argument cannot select another agent's credentials.
-- AFFiNE is Mimir's canonical source of truth.
-- Mem0 is a disposable, rebuildable search index.
-- When AFFiNE and Mem0 disagree, AFFiNE wins.
-- External content remains untrusted until it has been reviewed and curated.
-- Huginn stages evidence; it does not silently promote evidence to canonical
-  knowledge.
-- Muninn does not silently overwrite or delete canonical knowledge.
-- Approval applies to one exact action and expires.
-- Grafana Cloud observes redacted events but never authorizes an action.
+- Agent and workflow actions pass through Heimdall.
+- Workload identity selects the allowed tools and downstream account.
+- AFFiNE is accepted knowledge; Mem0 is only a rebuildable search index.
+- External content starts as untrusted evidence.
+- Sensitive actions pause for one exact approval.
+- Checkpoints move only after the corresponding result is durably stored.
+- Telemetry observes the flow but never authorizes it.
 
-## User interfaces to Ody
-
-The owner may reach the same Ody runtime through several interfaces:
-
-| Interface | Ingress path | Important requirement |
-| --- | --- | --- |
-| Browser | Hermes WebUI through authenticated ingress | Preserve the authenticated user and browser conversation |
-| Hermex | Hermes WebUI-compatible backend | Apply the same policy as the browser interface |
-| Signal | Signal adapter into the Hermes messaging gateway | Bind the permitted Signal sender to the owner identity |
-| Email | Scoped mailbox connector or authenticated inbound handler | Mail credentials remain behind Heimdall |
-| AFFiNE AI | AFFiNE AI editor calls the Hermes-compatible proxy | Preserve user context and prevent a tool-policy bypass |
-
-Email is an Ody interface, not permission for Hermes to hold unrestricted mail
-credentials. Inbound polling, message reads, attachments, replies, and sends
-should use scoped connectors mediated by Heimdall. If a provider can deliver an
-authenticated webhook, the ingress handler should still normalize and
-authenticate the event before it reaches Hermes.
-
-AFFiNE AI is also an Ody interface. It may be given the same tools Ody can use
-elsewhere, including the controlled AFFiNE connector, only after recursion,
-identity, and authorization tests pass. An edit request originating inside
-AFFiNE must not become an unbounded self-edit loop.
-
-```mermaid
-flowchart LR
-    Browser["Browser / Hermes WebUI"]
-    Hermex["Hermex"]
-    Signal["Signal"]
-    Email["Email connector"]
-    AffineAI["AFFiNE AI editor"]
-    Ingress["Authenticated ingress and channel adapters"]
-    Proxy["Hermes-compatible proxy"]
-    Ody["Ody / Hermes"]
-    Heimdall["Heimdall / Executor"]
-
-    Browser --> Ingress
-    Hermex --> Ingress
-    Signal --> Ingress
-    Email -->|"scoped mailbox event"| Heimdall
-    Heimdall -->|"normalized inbound event"| Ingress
-    AffineAI --> Proxy
-    Ingress --> Ody
-    Proxy --> Ody
-    Ody -->|"all general tool requests"| Heimdall
-```
-
-### Common request envelope
-
-Channel adapters should normalize an inbound message without discarding its
-origin:
-
-```yaml
-user_id: authenticated-owner-id
-channel: webui | hermex | signal | email | affine-ai
-channel_conversation_id: opaque-channel-value
-pantheon_conversation_id: opaque-internal-value
-message_id: opaque-channel-value
-received_at: timestamp
-attachments:
-  - reference-to-quarantined-content
-reply_route: opaque-channel-route
-data_classification: private
-```
-
-Opaque IDs are safer than putting email addresses, phone numbers, or message
-contents into logs and traces. The channel adapter, not the model, owns
-`user_id` and `reply_route`.
+These are **Pantheon Blueprint policy** and **validation requirements**, not a
+claim that a deployment already passes them.
 
 ## User question and knowledge retrieval
 
-Example question:
-
-> What did we decide about tool approvals, and is that decision still current?
-
-```mermaid
-sequenceDiagram
-    actor U as Owner
-    participant C as Browser, Signal, email, or AFFiNE AI
-    participant O as Ody / Hermes
-    participant H as Heimdall / Executor
-    participant M as Mem0
-    participant A as AFFiNE
-    participant X as Optional current-source check
-    participant G as Grafana Cloud
-
-    U->>C: Ask a question
-    C->>O: Normalized message with authenticated context
-    O->>H: Search Mimir with task and caller identity
-    H->>H: Authorize search for this caller and user
-    H->>M: Semantic query in permitted namespace
-    M-->>H: Candidate page IDs, revisions, and relevance
-    H-->>O: Filtered candidate references
-    loop Each material candidate
-        O->>H: Read canonical AFFiNE page by ID
-        H->>H: Authorize classification and page
-        H->>A: Read using Ody connector identity
-        A-->>H: Canonical page and revision
-        H-->>O: Filtered canonical content
-    end
-    opt User asks whether it is still current
-        O->>H: Request bounded current-source check
-        H->>X: Invoke approved read-only sources
-        X-->>H: Source bundle with provenance
-        H-->>O: Filtered source bundle
-    end
-    O->>C: Answer on the originating interface
-    C-->>U: One Ody response
-    O-->>G: Redacted task and retrieval telemetry
-    H-->>G: Redacted policy and tool telemetry
-```
-
-### Detailed steps
-
-1. The channel adapter authenticates or maps the sender and creates a common
-   request envelope.
-2. Hermes loads the correct Ody profile and conversation without placing
-   channel credentials in model context.
-3. Ody decides whether the request can be answered from the conversation alone
-   or requires Mimir retrieval.
-4. Ody asks Heimdall for the `search_mimir` capability.
-5. Heimdall verifies the Ody workload identity, owner identity, requested
-   namespace, and data classification.
-6. Mem0 returns candidate references and relevance metadata. Its text is useful
-   for ranking, not canonical authority.
-7. Ody asks Heimdall to fetch the material AFFiNE pages by stable ID.
-8. Heimdall reads AFFiNE with the downstream identity assigned to Ody.
-9. Ody answers from canonical content. If a current external check was
-   requested, Ody distinguishes historical decisions from new evidence.
-10. The answer is delivered through the original reply route.
-11. Hermes retains the conversation behind its session API. While the
-    transcript bridge remains gated, a manual exporter may publish only a
-    twice-observed, quiescent, minimized window to the append-only outbox
-    described in [Hermes-to-Muninn transcript outbox](transcript-outbox.md).
-12. Grafana Cloud receives identifiers, timings, counts, health, and redacted
-    decisions. It receives no authority to allow or deny the flow.
-
-The answer should not expose internal component names unless they help the
-owner understand a failure or the owner explicitly asks for diagnostics.
-
-## Per-agent downstream identity selection
-
-Ody, Muninn, and Huginn should have separate workload identities and separate
-accounts where the downstream system supports attribution. A shared Heimdall
-endpoint must preserve that distinction.
-
-This is a required Pantheon Blueprint capability. It is not a statement that
-every Executor version already guarantees safe multi-identity connector
-selection.
-
-```mermaid
-flowchart LR
-    Ody["Authenticated caller: Ody"]
-    Muninn["Authenticated caller: Muninn"]
-    Huginn["Authenticated caller: Huginn"]
-    Gateway["Heimdall / Executor"]
-    Map["Server-side identity map"]
-    OdyConn["Ody MCP connection"]
-    MuninnConn["Muninn MCP connection"]
-    HuginnConn["Huginn MCP connection"]
-    Affine["AFFiNE audit and page history"]
-
-    Ody --> Gateway
-    Muninn --> Gateway
-    Huginn --> Gateway
-    Gateway --> Map
-    Map --> OdyConn
-    Map --> MuninnConn
-    Map --> HuginnConn
-    OdyConn --> Affine
-    MuninnConn --> Affine
-    HuginnConn --> Affine
-```
-
-The mapping must be server-side:
-
-```text
-authenticated workload identity
-    → permitted tool
-    → fixed connector or MCP profile
-    → downstream account
-```
-
-It must not be:
-
-```text
-agent-supplied email or profile name
-    → arbitrary connector
-```
-
-Before enabling AFFiNE writes, verify all of the following:
-
-1. Each workload receives only its permitted connector profile.
-2. Changing request arguments cannot select another profile.
-3. OAuth refresh and connection recreation preserve profile separation.
-4. AFFiNE records the expected user for each write.
-5. Revoking one downstream identity affects only that identity.
-6. Audit events correlate gateway caller, selected connection, and downstream
-   account without logging credentials.
-
-If the current Executor release cannot provide this isolation, deploy separate
-Executor connector processes or instances per agent behind a small trusted
-router. Do not fall back to one shared AFFiNE identity and call attribution
-complete.
-
-## Muninn hourly conversation review
-
-An hourly schedule may eventually keep the knowledge inbox current without
-putting curation in the interactive request path. The schedule remains disabled
-until the manual Signal and WebUI canaries in
-[Hermes-to-Muninn transcript outbox](transcript-outbox.md) pass. Under the
-pinned Hermes `v0.19.0` compatibility limitation, unattended WebUI export
-remains disabled even after a manually selected WebUI canary passes.
-
-The following is an example future schedule:
-
-```cron
-0 * * * *
-```
-
-The deployment scheduler must interpret it in the configured local time zone,
-not an accidental container default.
+The owner can talk to Ody through a browser, Hermex, Signal, or another
+approved channel. The channel authenticates the owner and preserves the reply
+route. It does not give the model channel credentials.
 
 ```mermaid
 sequenceDiagram
-    actor R as Owner or operator
-    participant E as Manual exporter
-    participant S as Hermes session API
-    participant O as Append-only outbox
-    participant H as Authenticated Heimdall handoff
-    participant N as Muninn worker
-    participant M as Mem0
-    participant A as AFFiNE
-    participant G as Grafana Cloud
+    actor Owner
+    participant Channel as "Browser, Hermex, or messaging"
+    participant Ody
+    participant Heimdall
+    participant Mem0 as "Mem0 search index"
+    participant AFFiNE as "AFFiNE canonical knowledge"
 
-    R->>E: Run first manual observation
-    E->>S: Read allowlisted session through documented API
-    S-->>E: Session and message resources
-    E->>E: Record quiet candidate revision only
-    R->>E: Run later manual observation
-    E->>S: Read the same allowlisted session again
-    S-->>E: Unchanged quiet revision
-    E->>E: Minimize, redact, and HMAC-reference content
-    E->>O: Append immutable object and next hash-chained manifest
-    R->>N: Start gated Muninn canary
-    N->>H: Acquire lease and request exact-next manifest
-    H->>O: Authenticate, verify chain, and read immutable window
-    O-->>H: Next manifest and minimized window
-    H-->>N: Authorized window with provenance
-    N->>N: Extract decisions, corrections, preferences, and open questions
-    N->>H: Search Mimir for each material candidate
-    H->>M: Semantic candidate query
-    M-->>H: AFFiNE references
-    H-->>N: Candidate references
-    N->>H: Read relevant canonical pages
-    H->>A: Read as Muninn
-    A-->>H: Canonical pages and revisions
-    H-->>N: Canonical content
-    N->>N: Classify duplicate, support, new, update, contradiction, temporary, or sensitive
-    N->>H: Write candidate and provenance to review inbox
-    H->>A: Create draft as Muninn
-    A-->>H: Draft ID and revision
-    H-->>N: Persisted result
-    N->>H: Commit exact-next checkpoint with active lease
-    H->>O: Compare-and-swap checkpoint after draft persistence
-    O-->>H: Committed sequence and manifest hash
-    H-->>N: Checkpoint committed
-    N-->>G: Redacted counts, duration, checkpoint, and health
+    Owner->>Channel: "Ask a question"
+    Channel->>Ody: "Authenticated message and reply route"
+    Ody->>Heimdall: "Search request"
+    Heimdall->>Mem0: "Search permitted namespace"
+    Mem0-->>Heimdall: "Candidate page IDs"
+    Heimdall-->>Ody: "Candidate references"
+    Ody->>Heimdall: "Read material pages"
+    Heimdall->>AFFiNE: "Read as Ody"
+    AFFiNE-->>Heimdall: "Canonical pages and revisions"
+    Heimdall-->>Ody: "Filtered canonical content"
+    Ody-->>Channel: "One answer"
+    Channel-->>Owner: "Reply on the originating channel"
 ```
 
-### Hourly rules
+Mem0 helps Ody find likely pages. Ody reads the corresponding AFFiNE pages
+before treating the content as accepted knowledge. If Mem0 and AFFiNE disagree,
+AFFiNE wins.
 
-- Keep exporter and Muninn schedules disabled until the documented manual
-  Signal and WebUI canaries pass.
-- Read only allowlisted sessions through the documented Hermes session API;
-  never mount or read Hermes state directly.
-- Treat a twice-observed, unchanged, quiescent window as eligible. Do not claim
-  that a long-lived session is complete.
-- Keep unattended WebUI export disabled while the pinned runtime lacks trusted
-  WebUI owner attribution.
-- Publish minimized content with HMAC references as an immutable object plus
-  the exact-next hash-chained manifest.
-- Let Muninn obtain the next window only through Heimdall's authenticated
-  handoff and a bounded lease.
-- Treat attachments and quoted external content as untrusted.
-- Extract only durable candidates: explicit decisions, corrections, enduring
-  preferences, commitments, unresolved questions, and architecture changes.
-- Compare candidates with Mem0, then read matching canonical AFFiNE pages.
-- Classify each candidate rather than blindly appending it.
-- Write new material to a review inbox or draft area with its provenance.
-- Do not silently replace a canonical page.
-- Do not infer a deletion because a newer conversation omitted an old fact.
-- Commit only the exact-next checkpoint with compare-and-swap after the
-  corresponding AFFiNE draft and provenance persist successfully.
-- Leave the checkpoint unchanged on export, handoff, lease, validation, or
-  draft-persistence failure.
-- Make replay idempotent by deriving candidate IDs from immutable window and
-  manifest references.
+Routine permitted reads should not ask the owner for approval. A policy denial
+or missing identity stops the request; it does not cause a fallback to a direct
+connection.
 
-Low-risk automation may create or annotate drafts. Promotion into canonical
-knowledge should follow an explicit policy, and contradictions, sensitive
-material, deletions, and major decision changes should require review.
-The full qualification, privacy, ordering, and enablement gates are in
-[Hermes-to-Muninn transcript outbox](transcript-outbox.md).
+## Tool action
 
-## Muninn nightly consolidation
-
-The nightly pass is deeper than the hourly extraction. An example local
-schedule is:
-
-```cron
-0 1 * * *
-```
-
-At 01:00 in the configured deployment time zone, Muninn should:
-
-1. Verify that no hourly batches remain partially persisted.
-2. Reconcile duplicate candidates created across conversations and interfaces.
-3. Group related candidates into proposed page-level diffs.
-4. Recheck contradictions against canonical AFFiNE revisions.
-5. Flag stale, unresolved, or review-due items without deleting them.
-6. Validate that accepted AFFiNE revisions are represented in the active Mem0
-   generation.
-7. Produce a concise digest for Ody if owner attention is required.
-8. Record run health, counts, drift, and checkpoints for observability.
-
-```mermaid
-flowchart TD
-    Start["01:00 local schedule"]
-    Recover["Recover or report incomplete hourly runs"]
-    Dedupe["Deduplicate candidates by source and meaning"]
-    Reconcile["Reconcile with current AFFiNE revisions"]
-    Diff["Create proposed page-level diffs"]
-    Review{"Sensitive, contradictory, destructive, or major?"}
-    Inbox["Place in owner review queue"]
-    Draft["Create or update idempotent draft"]
-    Drift["Check AFFiNE-to-Mem0 index drift"]
-    Digest["Prepare Ody digest"]
-    Done["Persist checkpoint and health"]
-
-    Start --> Recover
-    Recover --> Dedupe
-    Dedupe --> Reconcile
-    Reconcile --> Diff
-    Diff --> Review
-    Review -->|"yes"| Inbox
-    Review -->|"no, policy permits draft"| Draft
-    Inbox --> Drift
-    Draft --> Drift
-    Drift --> Digest
-    Digest --> Done
-```
-
-“Consolidation” does not mean deleting history. Supersession should be recorded
-as a canonical relationship, and retention or deletion should remain a separate
-explicit operation.
-
-## AFFiNE-to-Mem0 deterministic rebuild
-
-Mem0 must be recoverable from canonical sources without relying on its previous
-contents.
+Ody, Muninn, and Huginn each have their own workload identity. Heimdall maps
+that identity to a fixed tool catalogue and fixed downstream connections.
 
 ```mermaid
 flowchart LR
-    Snapshot["Consistent AFFiNE export or page scan"]
-    Normalize["Normalize blocks and metadata"]
-    Chunk["Deterministic chunks"]
-    Stage["New Mem0 generation"]
-    Verify["Count, hash, reference, and query checks"]
-    Promote{"Validation passes?"}
-    Active["Atomically select new active generation"]
-    Old["Previous generation retained by explicit policy"]
-    Alert["Keep current generation and alert"]
-
-    Snapshot --> Normalize
-    Normalize --> Chunk
-    Chunk --> Stage
-    Stage --> Verify
-    Verify --> Promote
-    Promote -->|"yes"| Active
-    Active --> Old
-    Promote -->|"no"| Alert
+    Caller["Authenticated workload"] --> Request["Capability request"]
+    Request --> Heimdall["Heimdall"]
+    Heimdall --> Identity["Fixed caller and connection mapping"]
+    Identity --> Policy{"Policy decision"}
+    Policy -->|"allow"| Tool["Scoped tool action"]
+    Policy -->|"approval required"| Pause["Exact approval pause"]
+    Policy -->|"deny or unknown"| Deny["No action"]
+    Pause -->|"valid approval"| Tool
+    Pause -->|"deny, expire, replay, or change"| Deny
+    Tool --> Result["Filtered result and action evidence"]
 ```
 
-### Rebuild steps
+The model may choose a permitted capability and provide its bounded business
+arguments. It must not choose credentials, another role's connector, a broader
+repository, or an unapproved deployment target.
 
-1. Obtain a consistent AFFiNE page list and revision for the permitted
-   workspace.
-2. Export canonical content through a controlled AFFiNE interface.
-3. Normalize content without changing its meaning.
-4. Attach page ID, revision, classification, status, source references, and
-   content hash.
-5. Split content using a deterministic algorithm and stable chunk IDs such as:
+An approval prompt shows the meaningful effect: action, target, material
+arguments or diff, expiry, and whether it is once-only. A conversational “yes”
+is not approval. See [Approvals](approvals.md).
 
-   ```text
-   affine:{workspace-id}:{page-id}:{revision}:{chunk-number}
-   ```
+## Conversation to knowledge
 
-6. Write chunks into a new index generation rather than mutating the active
-   generation in place.
-7. Check page and chunk counts, hashes, classifications, reference integrity,
-   and representative search queries.
-8. Atomically mark the validated generation active.
-9. Keep the previous generation until an explicit retention decision removes
-   it.
-10. If validation fails, leave the current active generation untouched and
-    alert through the configured operations channel.
+Muninn reviews completed conversation windows outside the interactive reply
+path. It receives a minimized, redacted, append-only handoff rather than direct
+access to Ody's mutable runtime state.
 
-Incremental indexing may use the same stable IDs and revision checks, but a full
-rebuild must remain available and regularly tested. Index replacement is not a
-canonical AFFiNE deletion.
+```mermaid
+sequenceDiagram
+    participant Ody
+    participant Outbox as "Append-only transcript outbox"
+    participant Muninn
+    participant Heimdall
+    participant AFFiNE as "AFFiNE review inbox"
+    participant Owner
+
+    Ody->>Outbox: "Eligible minimized conversation window"
+    Muninn->>Heimdall: "Acquire lease and request exact-next window"
+    Heimdall->>Outbox: "Authenticated bounded read"
+    Outbox-->>Muninn: "Window and provenance"
+    Muninn->>Muninn: "Extract and classify durable candidates"
+    Muninn->>Heimdall: "Create traceable draft"
+    Heimdall->>AFFiNE: "Write as Muninn"
+    AFFiNE-->>Muninn: "Draft ID and revision"
+    Muninn->>Heimdall: "Commit exact-next checkpoint"
+    opt "Policy requires human review"
+        AFFiNE-->>Owner: "Present proposed change and provenance"
+        Owner->>AFFiNE: "Accept, reject, or edit"
+    end
+```
+
+Muninn classifies each candidate as a duplicate, supporting evidence, new
+knowledge, an update, a contradiction, temporary information, or sensitive
+material. Initial output goes to a review inbox or draft area.
+
+Low-risk policy may allow carefully bounded draft creation or append-only
+annotation. Contradictions, sensitive material, deletions, and material changes
+to accepted decisions require review. Muninn must not silently replace or
+delete canonical pages.
+
+If draft persistence fails, the checkpoint stays unchanged. Replay uses stable
+source and candidate IDs so it does not create duplicate drafts.
 
 ## Huginn external collection and Muninn curation
 
-Huginn is implemented as n8n workflows plus restricted fetch or browser workers.
-Its job is to collect and normalize evidence, not decide what is true.
+Huginn collects; Muninn interprets; AFFiNE accepts. Keeping these stages
+separate prevents hostile content from promoting itself into trusted knowledge.
+
+```mermaid
+flowchart LR
+    Source["External source"] --> Huginn["Huginn collection"]
+    Huginn --> Validate["Validate, limit, and classify"]
+    Validate -->|"unsafe"| Quarantine["Quarantine or reject"]
+    Validate -->|"allowed"| Capture["Immutable capture with provenance"]
+    Capture --> Compare["Deduplicate and compare"]
+    Compare -->|"unchanged"| Noop["No new event"]
+    Compare -->|"changed"| Muninn["Muninn review candidate"]
+    Muninn --> Draft["AFFiNE draft or review inbox"]
+    Draft --> Decision{"Review policy"}
+    Decision -->|"accept"| Canonical["AFFiNE accepted knowledge"]
+    Decision -->|"reject or defer"| Inbox["Remain in review"]
+    Canonical --> Index["Update rebuildable Mem0 index"]
+```
+
+A reviewed workflow may fetch a fixed anonymous public source directly.
+Authenticated connectors, browser actions, and agent-requested operations still
+pass through Heimdall with Huginn's fixed identity.
+
+The captured page can contain instructions, scripts, credentials, or misleading
+claims. None of that content may change collection policy, tool selection,
+approval state, or canonical knowledge authority.
+
+## Accepted knowledge to search
+
+AFFiNE-to-Mem0 synchronization is one-way. The indexer consumes accepted
+revisions and records which canonical revision each index entry represents.
+
+```mermaid
+flowchart LR
+    AFFiNE["AFFiNE accepted revision"] --> Event["Revision event"]
+    Event --> Indexer["Controlled indexer"]
+    Indexer --> Build["Build next Mem0 generation"]
+    Build --> Check{"Completeness and sample checks pass?"}
+    Check -->|"yes"| Switch["Atomically activate generation"]
+    Check -->|"no"| Keep["Keep current generation"]
+    Switch --> Mem0["Mem0 search index"]
+```
+
+Mem0 never writes accepted knowledge back into AFFiNE. Rebuild starts from
+AFFiNE, not from the old index. A failed or incomplete generation is not
+activated.
+
+## Prepare, merge, and deploy
+
+Maintenance uses separate authority from normal conversation. Read-only
+diagnosis needs no maintenance session. Preparing a bounded change requires an
+approved session. Merge and deployment then require separate exact approvals.
 
 ```mermaid
 sequenceDiagram
-    participant O as Ody
-    participant H as Heimdall
-    participant N as Huginn / n8n
-    participant W as Restricted fetch or browser worker
-    participant S as Immutable staging
-    participant M as Muninn
-    participant A as AFFiNE
+    actor Owner
+    participant Ody
+    participant Control as "Maintenance control"
+    participant Worker as "Disposable coding worker"
+    participant Git as "Git forge and CI"
+    participant Deploy as "Deployment broker"
 
-    O->>H: Create or update a bounded monitor
-    H->>H: Validate sources, frequency, limits, and destination
-    H->>N: Configure approved workflow
-    loop On schedule or event
-        N->>H: Request fetch or browser capability
-        H->>W: Run with restricted network and credentials
-        W-->>H: Untrusted capture and source metadata
-        H-->>N: Filtered capture
-        N->>N: Normalize, hash, and detect change
-        alt Material change
-            N->>H: Store immutable capture
-            H->>S: Append capture and provenance
-            S-->>H: Capture ID
-            H-->>N: Stored capture ID
-            N->>H: Publish curation event
-            H-->>M: Capture reference, not implicit trust
-            M->>H: Create evidence-linked candidate
-            H->>A: Write draft as Muninn
-        else No material change
-            N->>N: Record check result only
-        end
-    end
+    Owner->>Ody: "Diagnose a problem"
+    Ody-->>Owner: "Read-only findings"
+    Owner->>Ody: "Prepare a bounded fix"
+    Ody->>Control: "Propose exact scope, limits, tests, and expiry"
+    Control-->>Owner: "Request session approval"
+    Owner->>Control: "Approve exact preparation scope"
+    Control->>Worker: "Issue bounded grants"
+    Worker->>Git: "Branch, patch, tests, and draft pull request"
+    Git-->>Control: "Pinned commits and check results"
+    Control-->>Owner: "Request exact merge approval"
+    Owner->>Control: "Approve exact merge"
+    Control->>Git: "Merge once"
+    Control-->>Owner: "Request exact deployment approval"
+    Owner->>Control: "Approve pinned deployment and rollback"
+    Control->>Deploy: "Deploy approved desired-state revision"
+    Deploy-->>Control: "Health, evidence, and rollback result"
 ```
 
-Each staged capture should include:
+The preparation session does not imply permission to merge. Merge does not
+imply permission to deploy. A changed commit, target, image, policy revision,
+backup, or rollback point invalidates the corresponding approval.
 
-```yaml
-capture_id: generated-opaque-id
-source_url: normalized-source-url
-captured_at: timestamp
-workflow_id: stable-workflow-id
-content_hash: sha256
-media_type: text/html
-retrieval_method: http | browser
-classification: untrusted-external
-prior_capture_id: optional-opaque-id
-```
+Deployment stops when the required backup cannot be verified, the canary
+fails, the maintenance lease is lost, or health and semantic checks disagree.
+See [Scoped maintenance sessions](maintenance-sessions.md) for the complete
+contract.
 
-Browser workers such as Camofox or an agent-browser implementation should have:
+## Backup and restore
 
-- no route to private service networks;
-- no container-engine socket;
-- no unrelated host mounts;
-- no general 1Password access;
-- only the credentials explicitly provisioned for the selected connector;
-- bounded CPU, memory, runtime, downloads, and output;
-- disposable state unless a narrowly scoped profile is required.
-
-Muninn evaluates staged evidence against canonical pages. It may create a draft,
-link evidence, or flag a decision for review. It cannot turn a webpage into
-canonical knowledge merely because the page was collected successfully.
-
-## Approval pause and resume
-
-An approval is a durable pause in a tool invocation, not a conversational guess.
-The desired user experience supports both browser and Signal.
-
-The Signal command:
-
-```text
-/approve <short-request-id>
-```
-
-is a desired interface, not yet a verified Hermes/Executor capability. The final
-syntax may differ after integration testing.
+Backups move application-consistent staged data to a separate failure domain.
+The backup writer should append new objects but should not be able to erase
+history.
 
 ```mermaid
-sequenceDiagram
-    actor U as Owner
-    participant C as Browser or Signal
-    participant O as Ody
-    participant H as Heimdall
-    participant P as Approval store
-    participant T as Tool connector
-
-    U->>C: Request an action
-    C->>O: Authenticated message
-    O->>H: Invoke tool with semantic intent
-    H->>H: Evaluate caller, target, arguments, and risk
-    H->>P: Create exact, expiring, one-use approval
-    P-->>H: Pending request ID
-    H-->>O: Pending approval with safe summary
-    O-->>C: Show action, target, expiry, and short request ID
-    C-->>U: Approval prompt
-    U->>C: Approve once, deny, or /approve short-request-id
-    C->>O: Authenticated decision
-    O->>H: Resume approval request
-    H->>P: Verify owner, channel binding, expiry, and unchanged action hash
-    alt Valid approval
-        P-->>H: Approved once
-        H->>T: Execute exact stored action
-        T-->>H: Result
-        H-->>O: Filtered result
-        O-->>C: Completion
-    else Denied, expired, replayed, or changed
-        P-->>H: Reject
-        H-->>O: Safe rejection reason
-        O-->>C: Rejected or expired
-    end
+flowchart LR
+    Services["Application state"] --> Stage["Consistent local stage"]
+    Stage --> VerifyLocal["Validate staged set"]
+    VerifyLocal --> Writer["Append-oriented backup writer"]
+    Writer --> Remote["Separate backup target"]
+    Remote --> VerifyRemote["Independent remote verification"]
+    VerifyRemote --> Drill["Isolated restore drill"]
+    Drill --> Evidence["RPO, RTO, integrity, and identity evidence"]
 ```
 
-Approval records should bind:
+An uploaded object is not a verified backup. Production cutover after a
+restore requires a human decision because it replaces live state. See
+[Backups and restore](backups.md).
 
-- authenticated owner;
-- originating agent and workload identity;
-- semantic action and risk class;
-- exact tool, target, and normalized-argument hash;
-- originating task and conversation;
-- creation and expiry timestamps;
-- one-use state;
-- the allowed approval interfaces.
+## Quick failure table
 
-The browser may use an approval page or an inline WebUI control. Signal should
-show a concise summary and request ID. Approving from one interface should
-resume the same stored invocation and update the other interface, not cause Ody
-to reconstruct a similar call from memory.
+| Failure | Required result |
+| --- | --- |
+| Heimdall unavailable | Agent action stops; no direct-connector fallback |
+| Approval missing, altered, expired, or replayed | No tool invocation |
+| External capture malformed or unsafe | Reject or quarantine; canonical knowledge unchanged |
+| AFFiNE draft write fails | Checkpoint unchanged; bounded retry or operator review |
+| Mem0 rebuild fails | Current generation stays active; AFFiNE remains authoritative |
+| Tool outcome is ambiguous | Reconcile by idempotency key before retry |
+| Backup or canary verification fails | Deployment blocked |
+| Health is uncertain after deployment | Stop rollout and use the approved rollback or recovery path |
 
-Validation must cover approval, denial, expiry, replay, modified arguments,
-duplicate channel delivery, service restart during a pause, and a response
-arriving through a different permitted interface.
+## Validation
 
-## Update flow
+A deployment should test each flow with synthetic data and record both the
+success and failure paths. At minimum, prove caller separation, connector
+selection, approval replay resistance, canonical authorship, idempotent replay,
+checkpoint ordering, quarantine behavior, index rebuild, backup verification,
+and recovery after restart.
 
-Updates should use pinned releases, health gates, and rollback information.
-“Update nightly” means checking and safely promoting known versions, not pulling
-an unreviewed branch tip into production.
-
-```mermaid
-flowchart TD
-    Schedule["Nightly update check"]
-    Discover["Read signed or authoritative release metadata"]
-    Policy{"Version permitted by update policy?"}
-    Stage["Pull pinned image or package"]
-    Record["Record current version and recovery point"]
-    Deploy["Deploy one bounded stack"]
-    Health{"Health and acceptance checks pass?"}
-    Promote["Record successful version"]
-    Rollback["Restore previous pinned version"]
-    Notify["Notify through configured operations channel"]
-
-    Schedule --> Discover
-    Discover --> Policy
-    Policy -->|"no"| Notify
-    Policy -->|"yes"| Stage
-    Stage --> Record
-    Record --> Deploy
-    Deploy --> Health
-    Health -->|"yes"| Promote
-    Health -->|"no"| Rollback
-    Rollback --> Notify
-    Promote --> Notify
-```
-
-Komodo may perform deployment orchestration. Agents may ask for an update, but
-the deployed version, allowed channel, health checks, and rollback procedure
-remain policy-controlled. A self-update capability must not grant Ody an
-unrestricted shell, container-engine socket, or permission to edit arbitrary
-deployment definitions.
-
-## Backup flow
-
-Backups should create new objects in S3-compatible storage. The automated backup
-identity should not have permission to delete old backup objects.
-
-```mermaid
-sequenceDiagram
-    participant S as Backup scheduler
-    participant D as Databases and application data
-    participant B as Backup worker
-    participant O as Append-oriented object storage
-    participant V as Verification
-    participant G as Grafana Cloud
-
-    S->>B: Start backup with unique run ID
-    B->>D: Create consistent database and blob snapshots
-    D-->>B: Snapshot streams and manifests
-    B->>B: Encrypt, hash, and create manifest
-    B->>O: Put new objects using unique immutable keys
-    O-->>B: Stored object versions and checksums
-    B->>V: Verify manifest, size, checksums, and sample restore
-    V-->>B: Verification result
-    B-->>G: Redacted status, age, size, and restore-test metric
-```
-
-The backup flow should cover at least:
-
-- AFFiNE database and blob/object content as a consistent recoverable set;
-- Mem0 for convenience, while preserving the ability to rebuild it;
-- Hermes profiles, approved skills, schedules, and conversation archives;
-- Muninn checkpoints and candidate provenance;
-- n8n workflow definitions and its database;
-- Heimdall policy, connector metadata, and audit records without exporting raw
-  secrets;
-- deployment configuration and pinned-version manifests.
-
-1Password remains the secret source; backup jobs should reference recoverable
-secret items rather than copying vault contents into the backup set.
-
-Use unique time- and run-addressed object keys, bucket versioning or object lock
-where available, independent encryption, and periodic clean-room restore tests.
-Retention and deletion, if ever required, should use a separate explicitly
-authorized identity and policy. Backup creation automation must never decide
-that an old backup is safe to delete.
-
-## End-to-end acceptance paths
-
-Before treating the system as ready, demonstrate these complete paths:
-
-1. Ask the same knowledge question from the browser and Signal; receive answers
-   based on the same canonical AFFiNE revision.
-2. Send an email to Ody; verify the scoped connector ingests it without exposing
-   mailbox credentials to Hermes.
-3. Use AFFiNE AI to ask Ody for a controlled AFFiNE read; verify that it follows
-   normal Heimdall policy and does not recurse.
-4. Make attributable test edits as Ody and Muninn, plus a Huginn write confined
-   to a noncanonical staging object. Verify downstream identity separation and
-   prove that Huginn is denied canonical-page writes.
-5. Trigger a high-risk no-op test from the browser, approve it through Signal,
-   and confirm one-use resume behavior.
-6. Replay the same published manifest through the gated Muninn path; verify one
-   idempotent review draft, exact-next checkpoint advancement only after draft
-   persistence, and no advancement on a failed or duplicate replay.
-7. Run the 01:00 consolidation manually; verify contradictions are surfaced and
-   nothing canonical is silently deleted.
-8. Delete a disposable Mem0 environment, rebuild it from AFFiNE, and compare
-   representative queries.
-9. Collect a hostile test page through Huginn; verify it cannot reach private
-   networks or promote itself to canonical knowledge.
-10. Deploy a safe pinned-version test, force a failed health check, and verify
-    rollback.
-11. Restore AFFiNE, source archives, and configuration into a clean environment
-    from append-oriented backups.
-12. Confirm Grafana Cloud contains enough redacted telemetry to diagnose each
-    test but cannot approve, resume, or execute any action.
+Use [Readiness and assurance](assurance.md) for evidence records and promotion
+gates, and [Integration contracts](integration-contracts.md) for detailed
+component requirements.

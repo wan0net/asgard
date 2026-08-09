@@ -52,6 +52,7 @@ nav:
   - Understand:
       - Architecture: docs/architecture.md
       - End-to-end flows: docs/data-flows.md
+      - Approvals: docs/approvals.md
       - Tools and platform: docs/tooling.md
       - Mimir knowledge model: docs/mimir-knowledge-model.md
   - Roles:
