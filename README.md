@@ -184,7 +184,13 @@ canonical knowledge.
 
 The documentation and reference material in this repository are licensed under
 [CC BY-NC 4.0](LICENSE): attribution is required, and use is limited to
-non-commercial purposes. Future standalone software may carry its own license.
+non-commercial purposes.
+
+Reusable software under
+[`software/`](https://github.com/wan0net/asgard/tree/main/software) is licensed
+separately under the
+[BSD 3-Clause License](https://github.com/wan0net/asgard/blob/main/LICENSES/BSD-3-Clause.txt).
+Third-party components retain their own licences and notices.
 
 ## Project status
 
