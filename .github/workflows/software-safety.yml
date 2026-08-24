@@ -54,9 +54,11 @@ jobs:
           echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/${archive}" | sha256sum --check --strict
           tar -xzf "${RUNNER_TEMP}/${archive}" -C "${RUNNER_TEMP}" gitleaks
       - name: Scan complete repository history
-        run: "${RUNNER_TEMP}/gitleaks" git --redact --no-banner --verbose .
+        run: |
+          "${RUNNER_TEMP}/gitleaks" git --redact --no-banner --verbose .
       - name: Scan working tree
-        run: "${RUNNER_TEMP}/gitleaks" dir --redact --no-banner --verbose .
+        run: |
+          "${RUNNER_TEMP}/gitleaks" dir --redact --no-banner --verbose .
 
   trivy-secrets:
     name: Safety / Trivy secrets
