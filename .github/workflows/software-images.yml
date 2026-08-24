@@ -1,0 +1,114 @@
+name: Publish public software images
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - software/browser-egress-proxy/**
+      - software/executor-launcher/**
+      - .github/workflows/software-images.yml
+  push:
+    branches:
+      - main
+    paths:
+      - software/browser-egress-proxy/**
+      - software/executor-launcher/**
+      - .github/workflows/software-images.yml
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Validate / ${{ matrix.component }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: browser-egress-proxy
+            image: ghcr.io/wan0net/asgard-browser-egress-proxy
+          - component: executor-launcher
+            image: ghcr.io/wan0net/asgard-executor-launcher
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Build exact image for scanning
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: software/${{ matrix.component }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Scan exact image before publication
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}:${{ github.sha }}
+          format: table
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+  publish:
+    name: Publish / ${{ matrix.component }}
+    needs: validate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: browser-egress-proxy
+            image: ghcr.io/wan0net/asgard-browser-egress-proxy
+          - component: executor-launcher
+            image: ghcr.io/wan0net/asgard-executor-launcher
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish validated image with attestations
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: software/${{ matrix.component }}
+          platforms: linux/amd64
+          push: true
+          provenance: mode=max
+          sbom: true
+          tags: ${{ matrix.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+      - name: Record immutable image
+        env:
+          IMAGE: ${{ matrix.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+          SOURCE_COMMIT: ${{ github.sha }}
+        run: |
+          {
+            echo "## ${IMAGE}"
+            echo
+            echo "- Source commit: \`${SOURCE_COMMIT}\`"
+            echo "- Promotion reference: \`${IMAGE}@${DIGEST}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
