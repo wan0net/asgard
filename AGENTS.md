@@ -58,26 +58,30 @@ pantheon.example.com
 A private Git repository is not a secret manager. Never commit decrypted
 secrets anywhere.
 
-## Relationship to `pantheon-private`
+## Relationship to a private deployment repository
 
-Do not read, search, clone, or copy from `pantheon-private` unless the user
-explicitly authorizes that access for the current task.
+Do not read, search, clone, or copy from a private deployment repository unless
+the user explicitly authorizes that access for the current task.
 
 When authorized:
 
 1. Treat all private content as sensitive by default.
-2. Identify the general architectural lesson, not the private implementation
-   text.
-3. Synthesize a new public-safe explanation from first principles and official
+2. For documentation and examples, identify the general architectural lesson
+   and synthesize new public-safe material from first principles and official
    upstream sources.
-4. Replace every identifier and value with a generic placeholder.
-5. Do not transfer private deployment evidence, exact inventory, account
+3. Reusable software may be migrated only when the user explicitly authorizes
+   publication, the exact source paths are allow-listed, and the destination
+   receives independently reviewed commits with no shared private history.
+4. Replace every deployment identifier and value with a generic placeholder.
+5. Never transfer private deployment evidence, exact inventory, account
    structure, exception records, logs, screenshots, commands containing real
-   targets, or repository history.
-6. Run privacy and secret checks before presenting or committing the result.
+   targets, secret-provisioning configuration, or repository history.
+6. Run redacting privacy and secret checks before committing, again against the
+   complete public history before pushing, and again from a fresh clone after
+   publication.
 
-Authorization to consult the private repository is not authorization to
-publish from it.
+Authorization to consult a private repository is not authorization to publish
+from it. Publication must be an explicit part of the user's request.
 
 ## Source and claim discipline
 

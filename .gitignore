@@ -41,6 +41,9 @@ id_ed25519*
 /test-results/
 /coverage/
 /reports/
+__pycache__/
+*.py[cod]
+.pytest_cache/
 *.sarif
 .markdownlint-cache
 .lychee-cache

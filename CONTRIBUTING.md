@@ -78,14 +78,16 @@ product promotion without technical evidence are out of scope.
 
 Pantheon Blueprint is licensed under
 [Creative Commons Attribution-NonCommercial 4.0 International](LICENSE).
-Unless a software subtree contains an explicit, separate license notice,
-submitting a contribution means you agree to license that contribution under
-CC BY-NC 4.0.
+Documentation and reference-material contributions are submitted under CC
+BY-NC 4.0.
 
-A contribution made entirely within a separately licensed software subtree is
-submitted under the license stated in that subtree. Clearly identify any
+Contributions made entirely within
+[`software/`](https://github.com/wan0net/asgard/tree/main/software) are submitted
+under the
+[BSD 3-Clause License](https://github.com/wan0net/asgard/blob/main/LICENSES/BSD-3-Clause.txt)
+unless a component carries a more specific compatible notice. Clearly identify
 third-party material and its license; do not submit material whose terms are
-incompatible with this repository or the applicable subtree.
+incompatible with the applicable subtree.
 
 ## Pull requests
 
