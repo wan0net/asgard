@@ -28,6 +28,8 @@ repository.
   reply rules over validated captures.
 - [Maintenance-session authority](maintenance-session/) records explicit,
   time-bounded maintenance scope and issues narrow, expiring grants.
+- [Komodo maintenance adapter](komodo-maintenance-adapter/) binds one configured
+  deployment procedure to an exact maintenance-session scope.
 
 ## License
 
