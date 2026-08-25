@@ -26,6 +26,8 @@ repository.
   them in an immutable, leased outbox.
 - [Email control](email-control/) enforces authenticated-sender and thread-bound
   reply rules over validated captures.
+- [Maintenance-session authority](maintenance-session/) records explicit,
+  time-bounded maintenance scope and issues narrow, expiring grants.
 
 ## License
 

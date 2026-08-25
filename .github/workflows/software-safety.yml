@@ -49,6 +49,9 @@ jobs:
       - name: Run email-control tests
         working-directory: software
         run: python -m unittest discover -s email-control -p 'test_*.py' -v
+      - name: Run maintenance-session tests
+        working-directory: software
+        run: python -m unittest discover -s maintenance-session -p 'test_*.py' -v
 
   container-builds:
     name: CI / Public container builds
