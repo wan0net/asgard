@@ -33,7 +33,7 @@ WORKDIR /src
 COPY go.mod main.go ./
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /executor-launcher .
 
-FROM gcr.io/distroless/cc-debian12@sha256:6e1871c34683dc9ee996d13084497783fd98ac0200213d0826625f4e9d4be1d0
+FROM gcr.io/distroless/cc-debian13@sha256:e86cf4f565c8eee2cbb2be073bb107dafb14734b53d5872da20fdf47418a02f4
 WORKDIR /app
 LABEL org.opencontainers.image.source="https://github.com/wan0net/asgard" \
       org.opencontainers.image.revision="22a0383758aef57106fda7aa05825c0607352feb" \
