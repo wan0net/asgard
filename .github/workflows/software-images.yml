@@ -9,6 +9,7 @@ on:
       - software/huginn-handoff/**
       - software/email-control/**
       - software/maintenance-session/**
+      - software/komodo-maintenance-adapter/**
       - .github/workflows/software-images.yml
   push:
     branches:
@@ -19,6 +20,7 @@ on:
       - software/huginn-handoff/**
       - software/email-control/**
       - software/maintenance-session/**
+      - software/komodo-maintenance-adapter/**
       - .github/workflows/software-images.yml
 
 permissions: {}
@@ -58,6 +60,11 @@ jobs:
             image: ghcr.io/wan0net/asgard-maintenance-session-adapter
             context: software/maintenance-session
             dockerfile: software/maintenance-session/Dockerfile
+            trivyignores: ""
+          - component: komodo-maintenance-adapter
+            image: ghcr.io/wan0net/asgard-komodo-maintenance-adapter
+            context: software/komodo-maintenance-adapter
+            dockerfile: software/komodo-maintenance-adapter/Dockerfile
             trivyignores: ""
     steps:
       - name: Check out repository
@@ -120,6 +127,10 @@ jobs:
             image: ghcr.io/wan0net/asgard-maintenance-session-adapter
             context: software/maintenance-session
             dockerfile: software/maintenance-session/Dockerfile
+          - component: komodo-maintenance-adapter
+            image: ghcr.io/wan0net/asgard-komodo-maintenance-adapter
+            context: software/komodo-maintenance-adapter
+            dockerfile: software/komodo-maintenance-adapter/Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

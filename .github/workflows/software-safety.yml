@@ -52,6 +52,9 @@ jobs:
       - name: Run maintenance-session tests
         working-directory: software
         run: python -m unittest discover -s maintenance-session -p 'test_*.py' -v
+      - name: Run Komodo maintenance adapter tests
+        working-directory: software
+        run: python -m unittest discover -s komodo-maintenance-adapter -p 'test_*.py' -v
 
   container-builds:
     name: CI / Public container builds
@@ -64,6 +67,8 @@ jobs:
         run: docker build --tag pantheon-browser-egress-proxy-ci software/browser-egress-proxy
       - name: Build Executor self-host launcher
         run: docker build --tag pantheon-executor-launcher-ci software/executor-launcher
+      - name: Build Komodo maintenance adapter
+        run: docker build --tag pantheon-komodo-maintenance-adapter-ci software/komodo-maintenance-adapter
 
   public-safety:
     name: Safety / Public identifiers
