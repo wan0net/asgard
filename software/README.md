@@ -16,6 +16,17 @@ Private deployments consume reviewed releases or immutable container digests
 and retain their environment-specific configuration in a separate private
 repository.
 
+## Components
+
+- [Browser egress proxy](browser-egress-proxy/) denies private, loopback,
+  metadata, reserved, and DNS-rebinding destinations.
+- [Executor launcher](executor-launcher/) assembles a pinned upstream Executor
+  image and injects runtime secrets from files immediately before execution.
+- [Huginn handoff](huginn-handoff/) validates untrusted captures before placing
+  them in an immutable, leased outbox.
+- [Email control](email-control/) enforces authenticated-sender and thread-bound
+  reply rules over validated captures.
+
 ## License
 
 Unless a component states otherwise, this directory is licensed under the

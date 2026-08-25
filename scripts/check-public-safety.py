@@ -55,6 +55,24 @@ RULES = {
     ),
 }
 
+ALLOW_MARKER = re.compile(r"public-safety:\s*allow=([a-z0-9-]+)")
+EMAIL_ADDRESS = re.compile(
+    r"(?i)\b[A-Z0-9._%+-]+@(?P<domain>[A-Z0-9.-]+\.[A-Z]{2,})\b"
+)
+EXAMPLE_EMAIL_DOMAINS = {
+    "example.com",
+    "example.invalid",
+    "example.test",
+    "pantheon.example.com",
+}
+
+
+def is_example_email_domain(domain: str) -> bool:
+    normalized = domain.lower()
+    return normalized in EXAMPLE_EMAIL_DOMAINS or normalized.endswith(
+        (".example", ".invalid", ".test")
+    )
+
 BLOCKED_FILENAMES = {
     ".env",
     "id_rsa",
@@ -96,10 +114,17 @@ def scan(paths: list[Path], denylist: list[re.Pattern[str]]) -> int:
             except UnicodeDecodeError:
                 continue
             for line_number, line in enumerate(lines, start=1):
+                marker = ALLOW_MARKER.search(line)
+                allowed_rule = marker.group(1) if marker else None
                 for rule_name, pattern in RULES.items():
-                    if pattern.search(line):
+                    if rule_name != allowed_rule and pattern.search(line):
                         print(f"{rule_name}:{relative}:{line_number}")
                         findings += 1
+                if allowed_rule != "non-example-email":
+                    for match in EMAIL_ADDRESS.finditer(line):
+                        if not is_example_email_domain(match.group("domain")):
+                            print(f"non-example-email:{relative}:{line_number}")
+                            findings += 1
                 for index, pattern in enumerate(denylist, start=1):
                     if pattern.search(line):
                         print(f"private-identifier-{index}:{relative}:{line_number}")

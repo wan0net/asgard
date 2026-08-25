@@ -56,6 +56,28 @@ class PublicSafetyScannerTests(unittest.TestCase):
             self.assertIn("private-identifier-1", output.getvalue())
             self.assertNotIn(private_value, output.getvalue())
 
+    def test_explicit_rule_annotation_allows_negative_fixture(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "proxy.go"
+            source.write_text(
+                'blocked := "10.0.0.1" // public-safety: allow=rfc1918-ipv4 reason=negative-test\n',
+                encoding="utf-8",
+            )
+            self.assertEqual(SCANNER.scan([source], []), 0)
+
+    def test_real_email_is_blocked_but_example_email_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            unsafe = Path(directory) / "unsafe.py"
+            unsafe.write_text('owner = "owner@real-domain.invalidtld"\n', encoding="utf-8")
+            safe = Path(directory) / "safe.py"
+            safe.write_text('owner = "owner@pantheon.example.com"\n', encoding="utf-8")
+            output = StringIO()
+            with redirect_stdout(output):
+                findings = SCANNER.scan([unsafe, safe], [])
+            self.assertEqual(findings, 1)
+            self.assertIn("non-example-email", output.getvalue())
+            self.assertNotIn("owner@real-domain.invalidtld", output.getvalue())
+
     def test_secret_key_file_is_blocked_without_reading_it(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "client.key"
