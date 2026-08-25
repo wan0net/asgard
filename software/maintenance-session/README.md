@@ -30,8 +30,8 @@ Identities and the handoff key belong in private runtime configuration. They
 must not be accepted from the maintenance request body.
 
 The repository publishes a non-root image as
-`ghcr.io/wan0net/asgard-maintenance-session`. Pin deployments to a published
-digest rather than a mutable tag.
+`ghcr.io/wan0net/asgard-maintenance-session-adapter`. Pin deployments to a
+published digest rather than a mutable tag.
 
 ## Test
 
