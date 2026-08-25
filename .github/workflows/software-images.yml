@@ -6,6 +6,8 @@ on:
     paths:
       - software/browser-egress-proxy/**
       - software/executor-launcher/**
+      - software/huginn-handoff/**
+      - software/email-control/**
       - .github/workflows/software-images.yml
   push:
     branches:
@@ -13,6 +15,8 @@ on:
     paths:
       - software/browser-egress-proxy/**
       - software/executor-launcher/**
+      - software/huginn-handoff/**
+      - software/email-control/**
       - .github/workflows/software-images.yml
 
 permissions: {}
@@ -30,8 +34,20 @@ jobs:
         include:
           - component: browser-egress-proxy
             image: ghcr.io/wan0net/asgard-browser-egress-proxy
+            context: software/browser-egress-proxy
+            dockerfile: software/browser-egress-proxy/Dockerfile
           - component: executor-launcher
             image: ghcr.io/wan0net/asgard-executor-launcher
+            context: software/executor-launcher
+            dockerfile: software/executor-launcher/Dockerfile
+          - component: huginn-handoff
+            image: ghcr.io/wan0net/asgard-huginn-handoff
+            context: software/huginn-handoff
+            dockerfile: software/huginn-handoff/Dockerfile
+          - component: email-control
+            image: ghcr.io/wan0net/asgard-email-control
+            context: software
+            dockerfile: software/email-control/Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,7 +56,8 @@ jobs:
       - name: Build exact image for scanning
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: software/${{ matrix.component }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64
           load: true
           tags: ${{ matrix.image }}:${{ github.sha }}
@@ -73,8 +90,20 @@ jobs:
         include:
           - component: browser-egress-proxy
             image: ghcr.io/wan0net/asgard-browser-egress-proxy
+            context: software/browser-egress-proxy
+            dockerfile: software/browser-egress-proxy/Dockerfile
           - component: executor-launcher
             image: ghcr.io/wan0net/asgard-executor-launcher
+            context: software/executor-launcher
+            dockerfile: software/executor-launcher/Dockerfile
+          - component: huginn-handoff
+            image: ghcr.io/wan0net/asgard-huginn-handoff
+            context: software/huginn-handoff
+            dockerfile: software/huginn-handoff/Dockerfile
+          - component: email-control
+            image: ghcr.io/wan0net/asgard-email-control
+            context: software
+            dockerfile: software/email-control/Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -90,7 +119,8 @@ jobs:
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
-          context: software/${{ matrix.component }}
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64
           push: true
           provenance: mode=max

@@ -23,6 +23,10 @@ captured content into canonical knowledge.
 An empty operator-address list fails closed: no sender can receive operator
 status. Addresses belong in private runtime configuration, never public source.
 
+The repository publishes a non-root container as
+`ghcr.io/wan0net/asgard-huginn-handoff`. Pin deployments to a digest emitted by
+the image workflow; do not deploy a mutable tag.
+
 ## Test
 
 ```sh

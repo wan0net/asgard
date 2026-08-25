@@ -24,6 +24,11 @@ is recorded and is not retried blindly.
 Bearer values must be provisioned at runtime and must not appear in source,
 images, command arguments, or logs.
 
+The repository publishes a non-root container as
+`ghcr.io/wan0net/asgard-email-control`. It contains both the adapter and its
+matching public handoff contract. Pin deployments to a digest emitted by the
+image workflow; do not deploy a mutable tag.
+
 ## Test
 
 Run from the `software` directory so the sibling handoff contract is available:
