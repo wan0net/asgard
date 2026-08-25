@@ -8,6 +8,7 @@ on:
       - software/executor-launcher/**
       - software/huginn-handoff/**
       - software/email-control/**
+      - software/maintenance-session/**
       - .github/workflows/software-images.yml
   push:
     branches:
@@ -17,6 +18,7 @@ on:
       - software/executor-launcher/**
       - software/huginn-handoff/**
       - software/email-control/**
+      - software/maintenance-session/**
       - .github/workflows/software-images.yml
 
 permissions: {}
@@ -51,6 +53,11 @@ jobs:
             image: ghcr.io/wan0net/asgard-email-control
             context: software
             dockerfile: software/email-control/Dockerfile
+            trivyignores: ""
+          - component: maintenance-session
+            image: ghcr.io/wan0net/asgard-maintenance-session
+            context: software/maintenance-session
+            dockerfile: software/maintenance-session/Dockerfile
             trivyignores: ""
     steps:
       - name: Check out repository
@@ -109,6 +116,10 @@ jobs:
             image: ghcr.io/wan0net/asgard-email-control
             context: software
             dockerfile: software/email-control/Dockerfile
+          - component: maintenance-session
+            image: ghcr.io/wan0net/asgard-maintenance-session
+            context: software/maintenance-session
+            dockerfile: software/maintenance-session/Dockerfile
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
