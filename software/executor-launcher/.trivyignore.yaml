@@ -1,0 +1,9 @@
+vulnerabilities:
+  - id: CVE-2026-14456
+    purls:
+      - pkg:deb/debian/libssl3t64
+    expired_at: 2026-09-25
+    statement: >-
+      The pinned self-host runtime is an HTTP application behind a separate TLS
+      edge and does not create an OpenSSL QUIC server. The affected unbounded
+      QUIC-stream allocation path is not executable in this image.
