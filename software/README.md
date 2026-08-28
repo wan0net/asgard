@@ -18,8 +18,8 @@ repository.
 
 ## Components
 
-- [Browser egress proxy](browser-egress-proxy/) denies private, loopback,
-  metadata, reserved, and DNS-rebinding destinations.
+- [Browser egress proxy](browser-egress-proxy/) provides separate public-only
+  and explicitly allowlisted internal-only destination modes with DNS pinning.
 - [Executor launcher](executor-launcher/) assembles a pinned upstream Executor
   image and injects runtime secrets from files immediately before execution.
 - [Huginn handoff](huginn-handoff/) validates untrusted captures before placing
