@@ -326,6 +326,10 @@ arguments before approval and execution.
 - normalized URLs and redirect revalidation;
 - denial of loopback, link-local, metadata, private, and management networks for
   public fetch tools;
+- a distinct, approval-controlled internal browser worker when an agent must
+  operate an internal tool; its proxy permits only configured internal
+  subnets and ports, denies the public internet, and cannot share a session or
+  control network with a public browser worker;
 - allowlisted HTTP methods and response content types;
 - bounded browser runtime, downloads, redirects, and output;
 - fixed repositories, branches, organizations, or deployment stacks;
@@ -439,6 +443,14 @@ Browser workers such as Camofox or an agent-browser implementation process
 active, adversarial content. Running them beside Executor does not make them
 trusted.
 
+Public-web and internal-management browsing are different trust boundaries.
+The public worker must not reach private networks. An optional internal worker
+may reach only reviewed internal destinations and must not reach public
+websites. Use separate worker processes, proxy instances, control networks,
+leases, and Heimdall operation addresses. Creation of an internal lease should
+require an explicit policy decision, and application authentication remains
+mandatory after network access is granted.
+
 ### Minimum container profile
 
 - dedicated unprivileged user;
@@ -452,8 +464,10 @@ trusted.
 - bounded temporary downloads on a dedicated volume;
 - CPU, memory, process, disk, and execution-time limits;
 - network egress through an allowlisting or filtering proxy;
-- no route to RFC1918, loopback, link-local, cloud metadata, Tailscale
-  management, or Docker bridge management addresses;
+- for a public worker, no route to RFC1918, loopback, link-local, cloud
+  metadata, Tailscale management, or Docker bridge management addresses;
+- for an internal-management worker, no public route and no route outside the
+  exact internal subnet and port allowlist;
 - a new profile or sanitized snapshot for each untrusted task.
 
 ### When to use a disposable microVM
@@ -753,8 +767,12 @@ Security controls are ready only after repeatable tests pass.
 
 - [ ] Agent containers cannot directly reach AFFiNE, Mem0, mail, Git, cloud, or
       public web APIs.
-- [ ] Huginn and browser workers cannot reach private, management, metadata,
-      loopback, or Docker bridge targets.
+- [ ] Huginn and public browser workers cannot reach private, management,
+      metadata, loopback, or Docker bridge targets.
+- [ ] Any optional internal-management browser reaches only its configured
+      internal destinations and ports, cannot reach public sites, uses a
+      separate approved lease operation, and cannot be reached by a public
+      browser worker.
 - [ ] Databases and Docker APIs are absent from public and Pangolin routes.
 - [ ] Tailscale policy permits only documented source, destination, and port
       combinations.
