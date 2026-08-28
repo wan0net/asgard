@@ -1,7 +1,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 FROM python:3.14-alpine3.24@sha256:05b2b8b732ecd268fee8727a369f936f022d1321b59befd13c30ede22769dcdc
-RUN apk upgrade --no-cache libcrypto3 libssl3
+RUN python -m pip uninstall --yes pip setuptools \
+    && apk upgrade --no-cache libcrypto3 libssl3
 WORKDIR /app
 LABEL org.opencontainers.image.source="https://github.com/wan0net/asgard" \
       org.opencontainers.image.description="Scoped, durable maintenance-session authority" \
