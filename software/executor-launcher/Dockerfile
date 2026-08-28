@@ -1,20 +1,20 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-ARG EXECUTOR_COMMIT=22a0383758aef57106fda7aa05825c0607352feb
-ARG EXECUTOR_SOURCE_SHA256=a59a3a3bd4f7c12016df2fbdc6371ba2475a0ac2734f70b30cc9bee9f3afda68
+ARG EXECUTOR_COMMIT=e61beb747b5d3f8ff0128555ba92b90307331661
+ARG EXECUTOR_SOURCE_SHA256=df147212df8bc2dd70fc7e14a6cae9331d60fc07040869665c8bb5fdccd86654
 
-FROM oven/bun:1@sha256:e10577f0db68676a7024391c6e5cb4b879ebd17188ab750cf10024a6d700e5c4 AS executor-source
+FROM oven/bun:1@sha256:5ff609364c049b54eb0ff560ec96319729a972078ef2c755d758f0c6ef89c2d6 AS executor-source
 ARG EXECUTOR_COMMIT
 ARG EXECUTOR_SOURCE_SHA256
 WORKDIR /src
-ADD "https://github.com/UsefulSoftwareCo/executor/archive/${EXECUTOR_COMMIT}.tar.gz" /tmp/executor.tar.gz
+ADD "https://codeload.github.com/UsefulSoftwareCo/executor/tar.gz/${EXECUTOR_COMMIT}" /tmp/executor.tar.gz
 COPY apply-onepassword-selfhost.ts /tmp/apply-onepassword-selfhost.ts
 RUN echo "${EXECUTOR_SOURCE_SHA256}  /tmp/executor.tar.gz" | sha256sum --check --strict \
     && tar --extract --gzip --file /tmp/executor.tar.gz --strip-components=1 \
     && rm -f /tmp/executor.tar.gz \
     && bun run /tmp/apply-onepassword-selfhost.ts \
     && rm -f /tmp/apply-onepassword-selfhost.ts \
-    && grep -Fq 'if (mode !== "browser") return { artifactsEnabled, elicitationMode: { mode } };' \
+    && grep -Fq 'return { artifactsEnabled, searchToolsEnabled, elicitationMode: { mode } };' \
       packages/hosts/mcp/src/in-memory-session-store.ts
 
 FROM executor-source AS executor-prod-deps
@@ -33,10 +33,10 @@ WORKDIR /src
 COPY go.mod main.go ./
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /executor-launcher .
 
-FROM gcr.io/distroless/cc-debian13@sha256:e86cf4f565c8eee2cbb2be073bb107dafb14734b53d5872da20fdf47418a02f4
+FROM gcr.io/distroless/cc-debian13@sha256:9b615fff20e1a4fad29c2b30562580b212c7dd5e2225236735cca0070ed11c78
 WORKDIR /app
 LABEL org.opencontainers.image.source="https://github.com/wan0net/asgard" \
-      org.opencontainers.image.revision="22a0383758aef57106fda7aa05825c0607352feb" \
+      org.opencontainers.image.revision="e61beb747b5d3f8ff0128555ba92b90307331661" \
       org.opencontainers.image.description="Pinned Executor self-host with native MCP elicitation and a Pantheon secret-file launcher" \
       org.opencontainers.image.licenses="BSD-3-Clause AND MIT"
 ENV NODE_ENV=production \

@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM python:3.12-alpine3.24@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df
+FROM python:3.12-alpine3.24@sha256:d09d15e60962ca365d1cd544a48773bac9d33f2fb1b00f2aa0deec78ade7dc31
 RUN apk upgrade --no-cache libcrypto3 libssl3
 WORKDIR /app
 LABEL org.opencontainers.image.source="https://github.com/wan0net/asgard" \
