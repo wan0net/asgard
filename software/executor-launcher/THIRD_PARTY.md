@@ -2,8 +2,8 @@
 
 The container build downloads the upstream
 [`UsefulSoftwareCo/executor`](https://github.com/UsefulSoftwareCo/executor)
-source at commit `22a0383758aef57106fda7aa05825c0607352feb` and verifies its archive with
-the checksum recorded in the Dockerfile.
+source at commit `e61beb747b5d3f8ff0128555ba92b90307331661` (release
+`v1.6.2`) and verifies its archive with the checksum recorded in the Dockerfile.
 
 Executor is distributed under the MIT License. The build retains upstream
 licence material in the resulting image. Pantheon-specific launcher and patch
